@@ -1,0 +1,2431 @@
+create or replace PROCEDURE          BOS_CAPITAL_ADEQUACY (
+   FLAG                 IN   VARCHAR2 DEFAULT NULL,
+   CA_CATEGORY_ID_P     IN   VARCHAR2 DEFAULT NULL,
+   CA_GROUP_ID_P        IN   VARCHAR2 DEFAULT NULL,
+   CA_GROUP_NAME_EN_P   IN   VARCHAR2 DEFAULT NULL,
+   CA_GROUP_NAME_AR_P   IN   VARCHAR2 DEFAULT NULL,
+   GROUP_ID_P           IN   CLOB DEFAULT NULL,
+   ENTITY_ID_P          IN   CLOB DEFAULT NULL,
+   ENTITY_NAME_EN_P     IN   CLOB DEFAULT NULL,
+   ENTITY_NAME_AR_P     IN   CLOB DEFAULT NULL,
+   PERCENTAGE_P         IN   CLOB DEFAULT NULL,
+   ACCOUNT_ID_P         IN   CLOB DEFAULT NULL,
+   OPERATION_P          IN   CLOB DEFAULT NULL,
+   AMOUNT_P             IN   CLOB DEFAULT NULL,
+   SETUP_DATE_P         IN   VARCHAR2 DEFAULT NULL,
+   CATEGORY_ID_P        IN   CLOB DEFAULT NULL,
+   MARKET_VALUE_P       IN   CLOB DEFAULT NULL,
+   NET_AMOUNT_P         IN   CLOB DEFAULT NULL,
+   CLACULATED_P         IN   CLOB DEFAULT NULL
+)
+AS
+   CA_CATEGORY_ID_V         NUMBER (10, 0);
+   CA_GROUP_ID_V            NUMBER (10, 0);
+   CA_GROUP_NAME_EN_V       VARCHAR2 (200);
+   CA_GROUP_NAME_AR_V       VARCHAR2 (200);
+   SETUP_DATE_V             NUMBER (10, 0);
+   GROUP_ID_V               NUMBER (10, 0);
+   GROUP_ID_V_C             NUMBER (10, 0);
+   GROUP_ID_V_START         NUMBER (10, 0);
+   GROUP_ID_V_LEN           NUMBER (10, 0);
+   ENTITY_ID_V              NUMBER (10, 0);
+   ENTITY_ID_V_C            NUMBER (10, 0);
+   ENTITY_ID_V_START        NUMBER (10, 0);
+   ENTITY_ID_V_LEN          NUMBER (10, 0);
+   ENTITY_NAME_EN_V         VARCHAR2 (400);
+   ENTITY_NAME_EN_V_C       NUMBER (10, 0);
+   ENTITY_NAME_EN_V_START   NUMBER (10, 0);
+   ENTITY_NAME_EN_V_LEN     NUMBER (10, 0);
+   ENTITY_NAME_AR_V         VARCHAR2 (400);
+   ENTITY_NAME_AR_V_C       NUMBER (10, 0);
+   ENTITY_NAME_AR_V_START   NUMBER (10, 0);
+   ENTITY_NAME_AR_V_LEN     NUMBER (10, 0);
+   PERCENTAGE_V             NUMBER (16, 3);
+   PERCENTAGE_V_C           NUMBER (10, 0);
+   PERCENTAGE_V_START       NUMBER (10, 0);
+   PERCENTAGE_V_LEN         NUMBER (10, 0);
+   AMOUNT_V                 NUMBER (16, 3);
+   AMOUNT_V_C               NUMBER (10, 0);
+   AMOUNT_V_START           NUMBER (10, 0);
+   AMOUNT_V_LEN             NUMBER (10, 0);
+   ACCOUNT_ID_V             NUMBER (10, 0);
+   ACCOUNT_ID_V_C           NUMBER (10, 0);
+   ACCOUNT_ID_V_START       NUMBER (10, 0);
+   ACCOUNT_ID_V_LEN         NUMBER (10, 0);
+   OPERATION_V              NUMBER (10, 0);
+   OPERATION_V_C            NUMBER (10, 0);
+   OPERATION_V_START        NUMBER (10, 0);
+   OPERATION_V_LEN          NUMBER (10, 0);
+   CATEGORY_ID_V            NUMBER (10, 0);
+   CATEGORY_ID_V_C          NUMBER (10, 0);
+   CATEGORY_ID_V_START      NUMBER (10, 0);
+   CATEGORY_ID_V_LEN        NUMBER (10, 0);
+   MARKET_VALUE_V           NUMBER (16, 3);
+   MARKET_VALUE_V_C         NUMBER (10, 0);
+   MARKET_VALUE_V_START     NUMBER (10, 0);
+   MARKET_VALUE_V_LEN       NUMBER (10, 0);
+   NET_AMOUNT_V             NUMBER (16, 3);
+   NET_AMOUNT_V_C           NUMBER (10, 0);
+   NET_AMOUNT_V_START       NUMBER (10, 0);
+   NET_AMOUNT_V_LEN         NUMBER (10, 0);
+   CLACULATED_V             NUMBER (10, 0);
+   CLACULATED_V_C           NUMBER (10, 0);
+   CLACULATED_V_START       NUMBER (10, 0);
+   CLACULATED_V_LEN         NUMBER (10, 0);
+   FORMULA_ID_V             NUMBER (10, 0);
+   YEAR_V                   NUMBER (10, 0);
+   TODAY_DATE_V             NUMBER (10, 0);
+   STOO_SELCNT              NUMBER (10, 0);
+   V_SELECT                 VARCHAR2 (32000);
+   VSP_NAME                 VARCHAR2 (60)   := UPPER ('BOS_CAPITAL_ADEQUACY');
+   STOO_ERROR               VARCHAR2 (2000);
+   
+   CLIENT_MARGIN_AMT_V      NUMBER (16, 3);
+   TOTL_MARGIN_AMT_V        NUMBER (16, 3);
+   AMOUNT_T4_V              NUMBER (16, 3);
+   AMOUNT_MIN_T4_V          NUMBER (16, 3);
+   AMOUNT_T7_MIN_NMG_V      NUMBER (16, 3);
+   AMOUNT_T7_MIN_MG_V       NUMBER (16, 3);
+   AMOUNT_MIN_T8_V          NUMBER (16, 3);
+   AMOUNT_T7_MIN_FND_V      NUMBER (16, 3);
+   AMOUNT_T8_MIN_FND_V      NUMBER (16, 3);
+   CMR_V                    NUMBER;
+   STATUS_V                 VARCHAR2 (50);
+   
+   NEXT_DATE_4_V            NUMBER (10, 0);
+   NEXT_DATE_5_V            NUMBER (10, 0);
+   NEXT_DATE_6_V            NUMBER (10, 0);
+   NEXT_DATE_8_V            NUMBER (10, 0);
+   
+   DEPOSIT_ACCOUNT_ID_V     NUMBER(20);   
+   DEPOSIT_ACCOUNT_ORDER_V  VARCHAR2(200);   
+   
+   BOOK_FORMAULA_1_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_1_V    NUMBER (16, 3);
+   BOOK_FORMAULA_2_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_2_V    NUMBER (16, 3);
+   BOOK_FORMAULA_3_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_3_V    NUMBER (16, 3);
+   BOOK_FORMAULA_4_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_4_V    NUMBER (16, 3);
+   BOOK_FORMAULA_5_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_5_V    NUMBER (16, 3);
+   BOOK_FORMAULA_6_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_6_V    NUMBER (16, 3);
+   BOOK_FORMAULA_7_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_7_V    NUMBER (16, 3);
+   BOOK_FORMAULA_8_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_8_V    NUMBER (16, 3);
+   BOOK_FORMAULA_9_V        NUMBER (16, 3);
+   WEIGHTED_FORMAULA_9_V    NUMBER (16, 3);
+   BOOK_FORMAULA_10_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_10_V   NUMBER (16, 3);
+   BOOK_FORMAULA_11_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_11_V   NUMBER (16, 3);
+   BOOK_FORMAULA_12_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_12_V   NUMBER (16, 3);
+   BOOK_FORMAULA_13_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_13_V   NUMBER (16, 3);
+   BOOK_FORMAULA_14_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_14_V   NUMBER (16, 3);
+   BOOK_FORMAULA_15_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_15_V   NUMBER (16, 3);
+   BOOK_FORMAULA_16_V       NUMBER (16, 3);
+   WEIGHTED_FORMAULA_16_V   NUMBER (16, 3);
+   
+   P_CURSOR1         SYS_REFCURSOR  ;
+   P_CURSOR2         SYS_REFCURSOR  ;
+   P_CURSOR3         SYS_REFCURSOR  ;
+   P_CURSOR4         SYS_REFCURSOR  ;
+   P_CURSOR5         SYS_REFCURSOR  ;
+   P_CURSOR6         SYS_REFCURSOR  ;
+BEGIN
+   /*****************************************************************************************************************************************************
+   NAME:      BOS_CAPITAL_ADEQUACY
+
+   PURPOSE:  GET DATA REQUIRED TO PRINT CAPITAL ADEQUACY REPORTS
+
+   PARAMETER LIST :
+
+
+   NAME               DIRECTION   DATA TYPE    CASE          DESCRIPTION
+   ------------------ ----------- ------------ ---------     -----------------------
+
+   FLAG                IN         VARCHAR2     OPTIONAL    FLAG YOU WANT TO EXECUTE
+   CA_CATEGORY_ID_P    IN         VARCHAR2     OPTIONAL    CATEGORY ID OF THE REPORT DEFINED IN BO_CAPITAL_ADEQUACY_CATEGORY
+   CA_GROUP_ID_P       IN         VARCHAR2     OPTIONAL    GROUP ID OF THE CATEGORY DEFINED IN BO_CAPITAL_ADEQUACY_GRP_HDR
+   CA_GROUP_NAME_EN_P  IN         VARCHAR2     OPTIONAL    GROUP ENGLISH NAME
+   CA_GROUP_NAME_AR_P  IN         VARCHAR2     OPTIONAL    GROUP ARABIC NAME
+   GROUP_ID_P          IN         CLOB         OPTIONAL    FOR MULTI GROUPS ID'S
+   ENTITY_ID_P         IN         CLOB         OPTIONAL    ENTITY ID OF THE GROUP DEFINED IN BO_CAPITAL_ADEQUACY_GRP_DTL
+   ENTITY_NAME_EN_P    IN         CLOB         OPTIONAL    ENTITY ENGLISH NAME
+   ENTITY_NAME_AR_P    IN         CLOB         OPTIONAL    ENTITY ARABIC NAME
+   PERCENTAGE_P        IN         CLOB         OPTIONAL    PERCENTAGE USED FOR CALCULATE ENTITY AMOUNT
+   ACCOUNT_ID_P        IN         CLOB         OPTIONAL    ACCOUNT ID FOR GROUPS ENTITIES DEFINED IN BO_CAPITAL_ADEQUACY_GRP_ACC
+   OPERATION_P         IN         CLOB         OPTIONAL    OPERATION USED FOR CALCULATE EACH ACCOUNT AMOUNT ( 1: NEGATIVE AMOUNT) ( 2: POSITIVE AMOUNT)
+   AMOUNT_P            IN         CLOB         OPTIONAL    AMOUNT FOR GROUPS ENTITIES
+   SETUP_DATE_P        IN         VARCHAR2     OPTIONAL    SETUP DATE OF DATA IN BO_CAPITAL_ADEQUACY_SETUP
+   CATEGORY_ID_P       IN         CLOB         OPTIONAL    FOR MULTI CATEGORIES ID'S
+   MARKET_VALUE_P      IN         CLOB         OPTIONAL    MARKET VALUE FOR GROUPS ENTITIES
+   NET_AMOUNT_P        IN         CLOB         OPTIONAL    NET AMOUNT FOR GROUPS ENTITIES
+   CLACULATED_P        IN         CLOB         OPTIONAL    FLAG TO SPECIFY THAT ENTITY AMOUNT IS CALCULATED FROM (1: QUERY ),(2: CHART OF ACCOUNT )
+   CREATATION :
+
+    VER        DATE        AUTHOR              DESCRIPTION
+    ---------  ----------  ---------------     ------------------------------------------------------------
+    1.0        19/12/2010   1.ANAS ZAITON
+
+
+    LOG OF CHANGES :
+
+    VER        DATE        MODIFYED BY         FROM LINE#   TO LINE#   DESCRIPTION
+    ---------  ----------  ---------------     -----------  ---------  ---------------------------------------
+    1.1        19/12/2010   1.ANAS ZAITON                               ADD FLAGS ('CAC', 'GG', 'GE', 'GA', 'IA', 'UA',
+    , 'PCA')
+                            2.AHMED JADALLAH                            ADD FLAGS ('G', 'I , U' ,'D', 'DR')
+                            3.EHAB HKALID                               ADD FLAGS ('IS', 'US', 'GRS' )
+
+    NOTES:
+
+   GET, SET AND CALCULATE DATE REQUIRED TO GENERATE CAPITAL ADEQUACY REPORT
+
+   ****************************************************************************************************************************************************/
+
+   /*
+   */
+   TODAY_DATE_V := EDATA_GETDATE (SYSDATE);
+
+   IF CA_GROUP_ID_P IS NULL
+   THEN
+      CA_GROUP_ID_V := NULL;
+   ELSE
+      CA_GROUP_ID_V := TO_NUMBER (CA_GROUP_ID_P);
+   END IF;
+
+   IF CA_CATEGORY_ID_P IS NULL
+   THEN
+      CA_CATEGORY_ID_V := NULL;
+   ELSE
+      CA_CATEGORY_ID_V := TO_NUMBER (CA_CATEGORY_ID_P);
+   END IF;
+
+   IF CA_GROUP_NAME_EN_P IS NULL
+   THEN
+      CA_GROUP_NAME_EN_V := NULL;
+   ELSE
+      CA_GROUP_NAME_EN_V := CA_GROUP_NAME_EN_P;
+   END IF;
+
+   IF CA_GROUP_NAME_AR_P IS NULL
+   THEN
+      CA_GROUP_NAME_AR_V := NULL;
+   ELSE
+      CA_GROUP_NAME_AR_V := CA_GROUP_NAME_AR_P;
+   END IF;
+
+   IF SETUP_DATE_P IS NULL
+   THEN
+      SETUP_DATE_V := NULL;
+   ELSE
+      SETUP_DATE_V := SETUP_DATE_P;
+      
+      NEXT_DATE_4_V := EDATA_GETNEXTWORKINGDAY (SETUP_DATE_V ,4);
+      NEXT_DATE_5_V := EDATA_GETNEXTWORKINGDAY (SETUP_DATE_V ,5); 
+      NEXT_DATE_6_V := EDATA_GETNEXTWORKINGDAY (SETUP_DATE_V ,6);
+      NEXT_DATE_8_V := EDATA_GETNEXTWORKINGDAY (SETUP_DATE_V ,8);
+   END IF;
+
+   --TO INSERT CAPITAL ADEQUACY GROUPS DEFINITION
+   IF FLAG = 'I'
+   THEN
+      BEGIN
+         SELECT (SELECT MAX (CA_GROUP_ID)
+                   FROM BO_CAPITAL_ADEQUACY_GRP_HDR
+                  WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V)
+           INTO CA_GROUP_ID_V
+           FROM DUAL;
+
+         IF CA_GROUP_ID_V IS NULL
+         THEN
+            CA_GROUP_ID_V := 1;
+         ELSE
+            CA_GROUP_ID_V := CA_GROUP_ID_V + 1;
+         END IF;
+
+         INSERT INTO BO_CAPITAL_ADEQUACY_GRP_HDR
+                     (CA_GROUP_ID, CA_GROUP_NAME_EN, CA_GROUP_NAME_AR,
+                      CA_CATEGORY_ID
+                     )
+              VALUES (CA_GROUP_ID_V, CA_GROUP_NAME_EN_V, CA_GROUP_NAME_AR_V,
+                      CA_CATEGORY_ID_V
+                     );
+
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ';', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         ENTITY_NAME_EN_V_START := 1;
+         ENTITY_NAME_EN_V_C :=
+                         INSTR (ENTITY_NAME_EN_P, ';', ENTITY_NAME_EN_V_START);
+         ENTITY_NAME_EN_V_LEN := ENTITY_NAME_EN_V_C - ENTITY_NAME_EN_V_START;
+         ENTITY_NAME_AR_V_START := 1;
+         ENTITY_NAME_AR_V_C :=
+                         INSTR (ENTITY_NAME_AR_P, ';', ENTITY_NAME_AR_V_START);
+         ENTITY_NAME_AR_V_LEN := ENTITY_NAME_AR_V_C - ENTITY_NAME_AR_V_START;
+         PERCENTAGE_V_START := 1;
+         PERCENTAGE_V_C := INSTR (PERCENTAGE_P, ';', PERCENTAGE_V_START);
+         PERCENTAGE_V_LEN := PERCENTAGE_V_C - PERCENTAGE_V_START;
+         CLACULATED_V_START := 1;
+         CLACULATED_V_C := INSTR (CLACULATED_P, ';', CLACULATED_V_START);
+         CLACULATED_V_LEN := CLACULATED_V_C - CLACULATED_V_START;
+
+         WHILE ENTITY_ID_V_C > 0
+         LOOP
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ENTITY_NAME_EN_V :=
+               (LTRIM (RTRIM (SUBSTR (ENTITY_NAME_EN_P,
+                                      ENTITY_NAME_EN_V_START,
+                                      ENTITY_NAME_EN_V_LEN
+                                     )
+                             )
+                      )
+               );
+            ENTITY_NAME_AR_V :=
+               (LTRIM (RTRIM (SUBSTR (ENTITY_NAME_AR_P,
+                                      ENTITY_NAME_AR_V_START,
+                                      ENTITY_NAME_AR_V_LEN
+                                     )
+                             )
+                      )
+               );
+            PERCENTAGE_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (PERCENTAGE_P,
+                                                PERCENTAGE_V_START,
+                                                PERCENTAGE_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+            CLACULATED_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (CLACULATED_P,
+                                                       CLACULATED_V_START,
+                                                       CLACULATED_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            SELECT (SELECT MAX (ENTITY_ID)
+                      FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+                     WHERE CA_GROUP_ID = CA_GROUP_ID_V
+                       AND CA_CATEGORY_ID = CA_CATEGORY_ID_V)
+              INTO ENTITY_ID_V
+              FROM DUAL;
+
+            IF ENTITY_ID_V IS NULL
+            THEN
+               ENTITY_ID_V := 1;
+            ELSE
+               ENTITY_ID_V := ENTITY_ID_V + 1;
+            END IF;
+
+            INSERT INTO BO_CAPITAL_ADEQUACY_GRP_DTL
+                        (CA_GROUP_ID, ENTITY_ID, ENTITY_NAME_EN,
+                         ENTITY_NAME_AR, PERCENTAGE, CA_CATEGORY_ID,
+                         CALCULATED
+                        )
+                 VALUES (CA_GROUP_ID_V, ENTITY_ID_V, ENTITY_NAME_EN_V,
+                         ENTITY_NAME_AR_V, PERCENTAGE_V, CA_CATEGORY_ID_V,
+                         CLACULATED_V
+                        );
+
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ';', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            ENTITY_NAME_EN_V_START := ENTITY_NAME_EN_V_C + 1;
+            ENTITY_NAME_EN_V_C :=
+               INSTR (SUBSTR (ENTITY_NAME_EN_P, ENTITY_NAME_EN_V_START, 1000),
+                      ';',
+                      1
+                     );
+
+            IF ENTITY_NAME_EN_V_C <> 0
+            THEN
+               ENTITY_NAME_EN_V_C :=
+                              ENTITY_NAME_EN_V_C + ENTITY_NAME_EN_V_START - 1;
+            ELSE
+               ENTITY_NAME_EN_V_C := 0;
+            END IF;
+
+            ENTITY_NAME_EN_V_LEN :=
+                                   ENTITY_NAME_EN_V_C - ENTITY_NAME_EN_V_START;
+            ENTITY_NAME_AR_V_START := ENTITY_NAME_AR_V_C + 1;
+            ENTITY_NAME_AR_V_C :=
+               INSTR (SUBSTR (ENTITY_NAME_AR_P, ENTITY_NAME_AR_V_START, 1000),
+                      ';',
+                      1
+                     );
+
+            IF ENTITY_NAME_AR_V_C <> 0
+            THEN
+               ENTITY_NAME_AR_V_C :=
+                              ENTITY_NAME_AR_V_C + ENTITY_NAME_AR_V_START - 1;
+            ELSE
+               ENTITY_NAME_AR_V_C := 0;
+            END IF;
+
+            ENTITY_NAME_AR_V_LEN :=
+                                   ENTITY_NAME_AR_V_C - ENTITY_NAME_AR_V_START;
+            PERCENTAGE_V_START := PERCENTAGE_V_C + 1;
+            PERCENTAGE_V_C :=
+               INSTR (SUBSTR (PERCENTAGE_P, PERCENTAGE_V_START, 1000), ';', 1);
+
+            IF PERCENTAGE_V_C <> 0
+            THEN
+               PERCENTAGE_V_C := PERCENTAGE_V_C + PERCENTAGE_V_START - 1;
+            ELSE
+               PERCENTAGE_V_C := 0;
+            END IF;
+
+            PERCENTAGE_V_LEN := PERCENTAGE_V_C - PERCENTAGE_V_START;
+            CLACULATED_V_START := CLACULATED_V_C + 1;
+            CLACULATED_V_C :=
+               INSTR (SUBSTR (CLACULATED_P, CLACULATED_V_START, 1000), ';', 1);
+
+            IF CLACULATED_V_C <> 0
+            THEN
+               CLACULATED_V_C := CLACULATED_V_C + CLACULATED_V_START - 1;
+            ELSE
+               CLACULATED_V_C := 0;
+            END IF;
+
+            CLACULATED_V_LEN := CLACULATED_V_C - CLACULATED_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            V_SELECT :=
+                  ' SELECT ''P''  AS OP_STATUS, CAST('
+               || CA_GROUP_ID_V
+               || ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+            GET_XML_SCHEMA (V_SELECT);
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      END;
+   END IF;
+
+   --TO UPDATE CAPITAL ADEQUACY GROUPS DEFINITION
+   IF FLAG = 'U'
+   THEN
+      BEGIN
+         UPDATE BO_CAPITAL_ADEQUACY_GRP_HDR
+            SET CA_GROUP_NAME_EN = CA_GROUP_NAME_EN_V,
+                CA_GROUP_NAME_AR = CA_GROUP_NAME_AR_V
+          WHERE CA_GROUP_ID = CA_GROUP_ID_V
+            AND CA_CATEGORY_ID = CA_CATEGORY_ID_V;
+
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ';', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         ENTITY_NAME_EN_V_START := 1;
+         ENTITY_NAME_EN_V_C :=
+                         INSTR (ENTITY_NAME_EN_P, ';', ENTITY_NAME_EN_V_START);
+         ENTITY_NAME_EN_V_LEN := ENTITY_NAME_EN_V_C - ENTITY_NAME_EN_V_START;
+         ENTITY_NAME_AR_V_START := 1;
+         ENTITY_NAME_AR_V_C :=
+                         INSTR (ENTITY_NAME_AR_P, ';', ENTITY_NAME_AR_V_START);
+         ENTITY_NAME_AR_V_LEN := ENTITY_NAME_AR_V_C - ENTITY_NAME_AR_V_START;
+         PERCENTAGE_V_START := 1;
+         PERCENTAGE_V_C := INSTR (PERCENTAGE_P, ';', PERCENTAGE_V_START);
+         PERCENTAGE_V_LEN := PERCENTAGE_V_C - PERCENTAGE_V_START;
+         CLACULATED_V_START := 1;
+         CLACULATED_V_C := INSTR (CLACULATED_P, ';', CLACULATED_V_START);
+         CLACULATED_V_LEN := CLACULATED_V_C - CLACULATED_V_START;
+
+         WHILE ENTITY_ID_V_C > 0
+         LOOP
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ENTITY_NAME_EN_V :=
+               (LTRIM (RTRIM (SUBSTR (ENTITY_NAME_EN_P,
+                                      ENTITY_NAME_EN_V_START,
+                                      ENTITY_NAME_EN_V_LEN
+                                     )
+                             )
+                      )
+               );
+            ENTITY_NAME_AR_V :=
+               (LTRIM (RTRIM (SUBSTR (ENTITY_NAME_AR_P,
+                                      ENTITY_NAME_AR_V_START,
+                                      ENTITY_NAME_AR_V_LEN
+                                     )
+                             )
+                      )
+               );
+            PERCENTAGE_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (PERCENTAGE_P,
+                                                PERCENTAGE_V_START,
+                                                PERCENTAGE_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+            CLACULATED_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (CLACULATED_P,
+                                                       CLACULATED_V_START,
+                                                       CLACULATED_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            IF ENTITY_ID_V IS NULL
+            THEN
+               SELECT (SELECT MAX (ENTITY_ID)
+                         FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+                        WHERE CA_GROUP_ID = CA_GROUP_ID_V
+                          AND CA_CATEGORY_ID = CA_CATEGORY_ID_V)
+                 INTO ENTITY_ID_V
+                 FROM DUAL;
+
+               IF ENTITY_ID_V IS NULL
+               THEN
+                  ENTITY_ID_V := 1;
+               ELSE
+                  ENTITY_ID_V := ENTITY_ID_V + 1;
+               END IF;
+
+               INSERT INTO BO_CAPITAL_ADEQUACY_GRP_DTL
+                           (CA_GROUP_ID, ENTITY_ID, ENTITY_NAME_EN,
+                            ENTITY_NAME_AR, PERCENTAGE, CA_CATEGORY_ID,
+                            CALCULATED
+                           )
+                    VALUES (CA_GROUP_ID_V, ENTITY_ID_V, ENTITY_NAME_EN_V,
+                            ENTITY_NAME_AR_V, PERCENTAGE_V, CA_CATEGORY_ID_V,
+                            CLACULATED_V
+                           );
+            ELSE
+               UPDATE BO_CAPITAL_ADEQUACY_GRP_DTL
+                  SET ENTITY_NAME_EN = ENTITY_NAME_EN_V,
+                      ENTITY_NAME_AR = ENTITY_NAME_AR_V,
+                      PERCENTAGE = PERCENTAGE_V,
+                      CALCULATED = CLACULATED_V
+                WHERE CA_GROUP_ID = CA_GROUP_ID_V
+                  AND ENTITY_ID = ENTITY_ID_V
+                  AND CA_CATEGORY_ID = CA_CATEGORY_ID_V;
+            END IF;
+
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ';', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            ENTITY_NAME_EN_V_START := ENTITY_NAME_EN_V_C + 1;
+            ENTITY_NAME_EN_V_C :=
+               INSTR (SUBSTR (ENTITY_NAME_EN_P, ENTITY_NAME_EN_V_START, 1000),
+                      ';',
+                      1
+                     );
+
+            IF ENTITY_NAME_EN_V_C <> 0
+            THEN
+               ENTITY_NAME_EN_V_C :=
+                              ENTITY_NAME_EN_V_C + ENTITY_NAME_EN_V_START - 1;
+            ELSE
+               ENTITY_NAME_EN_V_C := 0;
+            END IF;
+
+            ENTITY_NAME_EN_V_LEN :=
+                                   ENTITY_NAME_EN_V_C - ENTITY_NAME_EN_V_START;
+            ENTITY_NAME_AR_V_START := ENTITY_NAME_AR_V_C + 1;
+            ENTITY_NAME_AR_V_C :=
+               INSTR (SUBSTR (ENTITY_NAME_AR_P, ENTITY_NAME_AR_V_START, 1000),
+                      ';',
+                      1
+                     );
+
+            IF ENTITY_NAME_AR_V_C <> 0
+            THEN
+               ENTITY_NAME_AR_V_C :=
+                              ENTITY_NAME_AR_V_C + ENTITY_NAME_AR_V_START - 1;
+            ELSE
+               ENTITY_NAME_AR_V_C := 0;
+            END IF;
+
+            ENTITY_NAME_AR_V_LEN :=
+                                   ENTITY_NAME_AR_V_C - ENTITY_NAME_AR_V_START;
+            PERCENTAGE_V_START := PERCENTAGE_V_C + 1;
+            PERCENTAGE_V_C :=
+               INSTR (SUBSTR (PERCENTAGE_P, PERCENTAGE_V_START, 1000), ';', 1);
+
+            IF PERCENTAGE_V_C <> 0
+            THEN
+               PERCENTAGE_V_C := PERCENTAGE_V_C + PERCENTAGE_V_START - 1;
+            ELSE
+               PERCENTAGE_V_C := 0;
+            END IF;
+
+            PERCENTAGE_V_LEN := PERCENTAGE_V_C - PERCENTAGE_V_START;
+            CLACULATED_V_START := CLACULATED_V_C + 1;
+            CLACULATED_V_C :=
+               INSTR (SUBSTR (CLACULATED_P, CLACULATED_V_START, 1000), ';', 1);
+
+            IF CLACULATED_V_C <> 0
+            THEN
+               CLACULATED_V_C := CLACULATED_V_C + CLACULATED_V_START - 1;
+            ELSE
+               CLACULATED_V_C := 0;
+            END IF;
+
+            CLACULATED_V_LEN := CLACULATED_V_C - CLACULATED_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            V_SELECT :=
+                  ' SELECT ''P''  AS OP_STATUS, CAST('
+               || CA_GROUP_ID_V
+               || ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+            GET_XML_SCHEMA (V_SELECT);
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      END;
+   END IF;
+
+   -- TO DELETE CAPITAL ADEQUACY GROUPS
+   IF FLAG = 'D'
+   THEN
+      BEGIN
+         STOO_SELCNT := 0;
+
+         FOR REC IN (SELECT 1 A
+                       FROM DUAL
+                      WHERE EXISTS (SELECT ACCOUNT_ID
+                                      FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+                                     WHERE ENTITY_ID = ENTITY_ID_V))
+         LOOP
+            STOO_SELCNT := REC.A;
+         END LOOP;
+
+         IF STOO_SELCNT <> 0
+         THEN
+            GET_XML_SCHEMA (F_GET_STATUS ('AF'));            -- ACCOUNT FOUND
+            RETURN;
+         END IF;
+      END;
+
+      BEGIN
+         DELETE FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+               WHERE CA_GROUP_ID = CA_GROUP_ID_V;
+
+         DELETE FROM BO_CAPITAL_ADEQUACY_GRP_HDR
+               WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                 AND CA_GROUP_ID = CA_GROUP_ID_V;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            GET_XML_SCHEMA (F_GET_STATUS ('P'));
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   -- TO DELETE CAPITAL ADEQUACY GROUP ENTITIY
+   IF FLAG = 'DR'
+   THEN
+      BEGIN
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ';', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+
+         WHILE ENTITY_ID_V_C > 0
+         LOOP
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            BEGIN
+               STOO_SELCNT := 0;
+
+               FOR REC IN (SELECT 1 A
+                             FROM DUAL
+                            WHERE EXISTS (
+                                     SELECT ACCOUNT_ID
+                                       FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+                                      WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                                        AND CA_GROUP_ID = CA_GROUP_ID_V
+                                        AND ENTITY_ID = ENTITY_ID_V))
+               LOOP
+                  STOO_SELCNT := REC.A;
+               END LOOP;
+
+               IF STOO_SELCNT <> 0
+               THEN
+                  GET_XML_SCHEMA (F_GET_STATUS ('AF'));      -- ACCOUNT FOUND
+                  RETURN;
+               END IF;
+
+               DELETE FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+                     WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                       AND CA_GROUP_ID = CA_GROUP_ID_V
+                       AND ENTITY_ID = ENTITY_ID_V;
+
+               ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+               ENTITY_ID_V_C :=
+                  INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ';',
+                         1);
+
+               IF ENTITY_ID_V_C <> 0
+               THEN
+                  ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+               ELSE
+                  ENTITY_ID_V_C := 0;
+               END IF;
+
+               ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            EXCEPTION
+               WHEN OTHERS
+               THEN
+                  ROLLBACK;
+                  GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                  RETURN;
+            END;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            GET_XML_SCHEMA (F_GET_STATUS ('P'));
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY GROUPS DEFINITION
+   IF FLAG = 'G'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),'' '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(A.CA_GROUP_NAME_EN AS VARCHAR2(300)),'' '') AS CA_GROUP_NAME_EN , '
+            || ' COALESCE(CAST(A.CA_GROUP_NAME_AR AS VARCHAR2(300)),'' '') AS CA_GROUP_NAME_AR ,'
+            || ' COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(10)),'' '') AS ENTITY_ID,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'' '') AS ENTITY_NAME_EN ,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'' '') AS ENTITY_NAME_AR ,'
+            || ' COALESCE(CAST((B.PERCENTAGE * 100) AS VARCHAR2(20)),'' '') AS PERCENTAGE ,'
+            || ' COALESCE(CAST((B.CALCULATED) AS VARCHAR2(20)),'' '') AS CALCULATED '
+            || ' FROM BO_CAPITAL_ADEQUACY_GRP_HDR A '
+            || ' LEFT JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_GROUP_ID = B.CA_GROUP_ID AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID '
+            || '  WHERE A.CA_GROUP_ID= '
+            || CA_GROUP_ID_V
+            || ' AND A.CA_CATEGORY_ID = '
+            || CA_CATEGORY_ID_V;
+         -- DBMS_OUTPUT.PUT_LINE (V_SELECT);
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY  CATEGORY
+   IF FLAG = 'CAC'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(CA_CATEGORY_ID AS VARCHAR2(10)),'' 0 '') AS CA_CATEGORY_ID,'
+            || ' COALESCE(CAST(CA_CATEGORY_NAME_EN AS VARCHAR2(200)),'' '') AS CA_CATEGORY_NAME_EN , '
+            || ' COALESCE(CAST(CA_CATEGORY_NAME_AR AS VARCHAR2(200)),'' '') AS CA_CATEGORY_NAME_AR '
+            || ' FROM BO_CAPITAL_ADEQUACY_CATEGORY ';
+
+         IF CA_CATEGORY_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                   V_SELECT || ' WHERE CA_CATEGORY_ID = ' || CA_CATEGORY_ID_V;
+         END IF;
+
+         V_SELECT := V_SELECT || 'ORDER BY CAST(CA_CATEGORY_ID AS NUMBER) ASC';
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         DBMS_OUTPUT.PUT_LINE (V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY  GROUPS
+   IF FLAG = 'GG'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(CA_GROUP_ID AS VARCHAR2(10)),'' 0 '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(CA_GROUP_NAME_EN AS VARCHAR2(200)),'' '') AS CA_GROUP_NAME_EN , '
+            || ' COALESCE(CAST(CA_GROUP_NAME_AR AS VARCHAR2(200)),'' '') AS CA_GROUP_NAME_AR '
+            || ' FROM BO_CAPITAL_ADEQUACY_GRP_HDR ';
+
+         IF CA_CATEGORY_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                    V_SELECT || 'WHERE CA_CATEGORY_ID = ' || CA_CATEGORY_ID_V;
+         END IF;
+
+         IF CA_GROUP_ID_V IS NOT NULL
+         THEN
+            V_SELECT := V_SELECT || 'WHERE CA_GROUP_ID = ' || CA_GROUP_ID_V;
+         END IF;
+
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY  ENTITIES
+   IF FLAG = 'GE'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(10)),'' 0 '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),'' 0 '') AS ENTITY_ID,'
+            || ' COALESCE(CAST(A.ENTITY_NAME_EN AS VARCHAR2(400)),'' '') AS ENTITY_NAME_EN , '
+            || ' COALESCE(CAST(A.ENTITY_NAME_AR AS VARCHAR2(400)),'' '') AS ENTITY_NAME_AR ,'
+            || ' COALESCE(CAST(A.PERCENTAGE AS VARCHAR2(10)),'' 0 '') AS PERCENTAGE'
+            || ' FROM BO_CAPITAL_ADEQUACY_GRP_DTL A '
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR B ON A.CA_GROUP_ID = B.CA_GROUP_ID AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID';
+
+         IF CA_CATEGORY_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                 V_SELECT || ' WHERE B.CA_CATEGORY_ID = ' || CA_CATEGORY_ID_V;
+         END IF;
+
+         IF CA_GROUP_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                       V_SELECT || ' WHERE A.CA_GROUP_ID = ' || CA_GROUP_ID_V;
+         END IF;
+
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY  ACCOUNTS
+   IF FLAG = 'GA'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(10)),'' 0 '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(10)),'' 0 '') AS ENTITY_ID,'
+            || ' COALESCE(CAST(C.ACCOUNT_ID AS VARCHAR2(10)),'' 0 '') AS ACCOUNT_ID,'
+            || ' COALESCE(CAST(D.ACCOUNT_NO AS VARCHAR2(100)),''  '') AS ACCOUNT_NO,'
+            || ' COALESCE(CAST(D.ACCOUNT_DESC_EN AS VARCHAR2(200)),'' '') AS ACCOUNT_DESC_EN , '
+            || ' COALESCE(CAST(D.ACCOUNT_DESC_AR AS VARCHAR2(200)),'' '') AS ACCOUNT_DESC_AR ,'
+            || ' COALESCE(CAST(C.OPERATION AS VARCHAR2(10)),'' 0 '') AS OPERATION'
+            || ' FROM BO_CAPITAL_ADEQUACY_GRP_HDR A '
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_GROUP_ID = B.CA_GROUP_ID AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID '
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_ACC C ON B.CA_CATEGORY_ID = C.CA_CATEGORY_ID AND B.CA_GROUP_ID = C.CA_GROUP_ID AND B.ENTITY_ID = C.ENTITY_ID'
+            || ' INNER JOIN BO_CHART_OF_ACCOUNT D ON C.ACCOUNT_ID = D.ACCOUNT_ID ';
+
+         IF CA_CATEGORY_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                 V_SELECT || ' WHERE A.CA_CATEGORY_ID = ' || CA_CATEGORY_ID_V;
+         END IF;
+
+         IF CA_GROUP_ID_V IS NOT NULL
+         THEN
+            V_SELECT :=
+                       V_SELECT || ' WHERE A.CA_GROUP_ID = ' || CA_GROUP_ID_V;
+         END IF;
+
+         V_SELECT := V_SELECT || ' ORDER BY B.CA_GROUP_ID,B.ENTITY_ID';
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO INSERT CAPITAL ADEQUACY SETUP
+   IF FLAG = 'IS'
+   THEN
+      BEGIN
+         DELETE FROM BO_CAPITAL_ADEQUACY_SETUP
+               WHERE SETUP_DATE = SETUP_DATE_V;
+
+         CATEGORY_ID_V_START := 1;
+         CATEGORY_ID_V_C := INSTR (CATEGORY_ID_P, ',', CATEGORY_ID_V_START);
+         CATEGORY_ID_V_LEN := CATEGORY_ID_V_C - CATEGORY_ID_V_START;
+         GROUP_ID_V_START := 1;
+         GROUP_ID_V_C := INSTR (GROUP_ID_P, ',', GROUP_ID_V_START);
+         GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ',', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         AMOUNT_V_START := 1;
+         AMOUNT_V_C := INSTR (AMOUNT_P, ',', AMOUNT_V_START);
+         AMOUNT_V_LEN := AMOUNT_V_C - AMOUNT_V_START;
+         NET_AMOUNT_V_START := 1;
+         NET_AMOUNT_V_C := INSTR (NET_AMOUNT_P, ',', NET_AMOUNT_V_START);
+         NET_AMOUNT_V_LEN := NET_AMOUNT_V_C - NET_AMOUNT_V_START;
+         MARKET_VALUE_V_START := 1;
+         MARKET_VALUE_V_C :=
+                            INSTR (MARKET_VALUE_P, ',', MARKET_VALUE_V_START);
+         MARKET_VALUE_V_LEN := MARKET_VALUE_V_C - MARKET_VALUE_V_START;
+
+         WHILE ENTITY_ID_V_C > 0
+         LOOP
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            AMOUNT_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (AMOUNT_P,
+                                                AMOUNT_V_START,
+                                                AMOUNT_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+            NET_AMOUNT_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (NET_AMOUNT_P,
+                                                NET_AMOUNT_V_START,
+                                                NET_AMOUNT_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+            MARKET_VALUE_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (MARKET_VALUE_P,
+                                                MARKET_VALUE_V_START,
+                                                MARKET_VALUE_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+            GROUP_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (GROUP_ID_P,
+                                                       GROUP_ID_V_START,
+                                                       GROUP_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            CATEGORY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (CATEGORY_ID_P,
+                                                       CATEGORY_ID_V_START,
+                                                       CATEGORY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            INSERT INTO BO_CAPITAL_ADEQUACY_SETUP
+                        (SETUP_DATE, CA_CATEGORY_ID, CA_GROUP_ID,
+                         ENTITY_ID, AMOUNT, NET_AMOUNT, MARKET_VALUE
+                        )
+                 VALUES (SETUP_DATE_V, CATEGORY_ID_V, GROUP_ID_V,
+                         ENTITY_ID_V, AMOUNT_V, NET_AMOUNT_V, MARKET_VALUE_V
+                        );
+
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ',', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            AMOUNT_V_START := AMOUNT_V_C + 1;
+            AMOUNT_V_C :=
+                       INSTR (SUBSTR (AMOUNT_P, AMOUNT_V_START, 1000), ',', 1);
+
+            IF AMOUNT_V_C <> 0
+            THEN
+               AMOUNT_V_C := AMOUNT_V_C + AMOUNT_V_START - 1;
+            ELSE
+               AMOUNT_V_C := 0;
+            END IF;
+
+            AMOUNT_V_LEN := AMOUNT_V_C - AMOUNT_V_START;
+            NET_AMOUNT_V_START := NET_AMOUNT_V_C + 1;
+            NET_AMOUNT_V_C :=
+               INSTR (SUBSTR (NET_AMOUNT_P, NET_AMOUNT_V_START, 1000), ',', 1);
+
+            IF NET_AMOUNT_V_C <> 0
+            THEN
+               NET_AMOUNT_V_C := NET_AMOUNT_V_C + NET_AMOUNT_V_START - 1;
+            ELSE
+               NET_AMOUNT_V_C := 0;
+            END IF;
+
+            NET_AMOUNT_V_LEN := NET_AMOUNT_V_C - NET_AMOUNT_V_START;
+            MARKET_VALUE_V_START := MARKET_VALUE_V_C + 1;
+            MARKET_VALUE_V_C :=
+               INSTR (SUBSTR (MARKET_VALUE_P, MARKET_VALUE_V_START, 1000),
+                      ',',
+                      1
+                     );
+
+            IF MARKET_VALUE_V_C <> 0
+            THEN
+               MARKET_VALUE_V_C :=
+                                  MARKET_VALUE_V_C + MARKET_VALUE_V_START - 1;
+            ELSE
+               MARKET_VALUE_V_C := 0;
+            END IF;
+
+            MARKET_VALUE_V_LEN := MARKET_VALUE_V_C - MARKET_VALUE_V_START;
+            GROUP_ID_V_START := GROUP_ID_V_C + 1;
+            GROUP_ID_V_C :=
+                   INSTR (SUBSTR (GROUP_ID_P, GROUP_ID_V_START, 1000), ',', 1);
+
+            IF GROUP_ID_V_C <> 0
+            THEN
+               GROUP_ID_V_C := GROUP_ID_V_C + GROUP_ID_V_START - 1;
+            ELSE
+               GROUP_ID_V_C := 0;
+            END IF;
+
+            GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+            CATEGORY_ID_V_START := CATEGORY_ID_V_C + 1;
+            CATEGORY_ID_V_C :=
+               INSTR (SUBSTR (CATEGORY_ID_P, CATEGORY_ID_V_START, 1000),
+                      ',',
+                      1
+                     );
+
+            IF CATEGORY_ID_V_C <> 0
+            THEN
+               CATEGORY_ID_V_C := CATEGORY_ID_V_C + CATEGORY_ID_V_START - 1;
+            ELSE
+               CATEGORY_ID_V_C := 0;
+            END IF;
+
+            CATEGORY_ID_V_LEN := CATEGORY_ID_V_C - CATEGORY_ID_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            GET_XML_SCHEMA (F_GET_STATUS ('P'));
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO UPDATE CAPITAL ADEQUACY SETUP
+   IF FLAG = 'US'
+   THEN
+      BEGIN
+         UPDATE BO_CAPITAL_ADEQUACY_SETUP
+            SET ENTITY_ID = ENTITY_ID_V,
+                SETUP_DATE = SETUP_DATE_V,
+                AMOUNT = AMOUNT_V,
+                CA_GROUP_ID = CA_GROUP_ID_V;
+
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ',', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         AMOUNT_V_START := 1;
+         AMOUNT_V_C := INSTR (AMOUNT_P, ',', AMOUNT_V_START);
+         AMOUNT_V_LEN := AMOUNT_V_C - AMOUNT_V_START;
+
+         WHILE ENTITY_ID_V_C > 0
+         LOOP
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            AMOUNT_V :=
+               TO_NUMBER (LTRIM (RTRIM (SUBSTR (AMOUNT_P,
+                                                AMOUNT_V_START,
+                                                AMOUNT_V_LEN
+                                               )
+                                       )
+                                )
+                         );
+
+            INSERT INTO BO_CAPITAL_ADEQUACY_SETUP
+                        (ENTITY_ID, SETUP_DATE, AMOUNT, CA_GROUP_ID
+                        )
+                 VALUES (ENTITY_ID_V, SETUP_DATE_V, AMOUNT_V, CA_GROUP_ID_V
+                        );
+
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ',', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            AMOUNT_V_START := AMOUNT_V_C + 1;
+            AMOUNT_V_C :=
+                       INSTR (SUBSTR (AMOUNT_P, AMOUNT_V_START, 1000), ',', 1);
+
+            IF AMOUNT_V_C <> 0
+            THEN
+               AMOUNT_V_C := AMOUNT_V_C + AMOUNT_V_START - 1;
+            ELSE
+               AMOUNT_V_C := 0;
+            END IF;
+
+            AMOUNT_V_LEN := AMOUNT_V_C - AMOUNT_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            V_SELECT :=
+                  ' SELECT ''P''  AS OP_STATUS, CAST('
+               || CA_GROUP_ID_V
+               || ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+            GET_XML_SCHEMA (V_SELECT);
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET CAPITAL ADEQUACY SETUP
+   IF FLAG = 'GRS'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(A.CA_CATEGORY_ID AS VARCHAR2(10)),'' 0 '') AS CA_CATEGORY_ID,'
+            || ' COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),'' 0 '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),'' 0 '') AS ENTITY_ID,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'' '') AS ENTITY_NAME_EN,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'' '') AS ENTITY_NAME_AR, '
+            || ' COALESCE(CAST(A.AMOUNT AS VARCHAR2(15)),'' 0 '') AS AMOUNT , '
+            || ' COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(15)),'' 0 '') AS MARKET_VALUE , '
+            || ' COALESCE(CAST(A.NET_AMOUNT AS VARCHAR2(15)),'' 0 '') AS NET_AMOUNT '
+            || ' FROM BO_CAPITAL_ADEQUACY_SETUP A'
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL  B ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID  AND A.CA_GROUP_ID = B.CA_GROUP_ID AND A.ENTITY_ID = B.ENTITY_ID '
+            || ' WHERE A.SETUP_DATE = '
+            || SETUP_DATE_V;
+         --DBMS_OUTPUT.PUT_LINE (V_SELECT);
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO INSERT CAPITAL ADEQUACY ACCOUNTS
+   IF FLAG = 'IA'
+   THEN
+      BEGIN
+         GROUP_ID_V_START := 1;
+         GROUP_ID_V_C := INSTR (GROUP_ID_P, ',', GROUP_ID_V_START);
+         GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ',', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         ACCOUNT_ID_V_START := 1;
+         ACCOUNT_ID_V_C := INSTR (ACCOUNT_ID_P, ',', ACCOUNT_ID_V_START);
+         ACCOUNT_ID_V_LEN := ACCOUNT_ID_V_C - ACCOUNT_ID_V_START;
+         OPERATION_V_START := 1;
+         OPERATION_V_C := INSTR (OPERATION_P, ',', OPERATION_V_START);
+         OPERATION_V_LEN := OPERATION_V_C - OPERATION_V_START;
+
+         WHILE ACCOUNT_ID_V_C > 0
+         LOOP
+            GROUP_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (GROUP_ID_P,
+                                                       GROUP_ID_V_START,
+                                                       GROUP_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ACCOUNT_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ACCOUNT_ID_P,
+                                                       ACCOUNT_ID_V_START,
+                                                       ACCOUNT_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            OPERATION_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (OPERATION_P,
+                                                       OPERATION_V_START,
+                                                       OPERATION_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            INSERT INTO BO_CAPITAL_ADEQUACY_GRP_ACC
+                        (CA_GROUP_ID, ENTITY_ID, ACCOUNT_ID, OPERATION,
+                         SETUP_DATE
+                        )
+                 VALUES (GROUP_ID_V, ENTITY_ID_V, ACCOUNT_ID_V, OPERATION_V,
+                         TODAY_DATE_V
+                        );
+
+            GROUP_ID_V_START := GROUP_ID_V_C + 1;
+            GROUP_ID_V_C :=
+                   INSTR (SUBSTR (GROUP_ID_P, GROUP_ID_V_START, 1000), ',', 1);
+
+            IF GROUP_ID_V_C <> 0
+            THEN
+               GROUP_ID_V_C := GROUP_ID_V_C + GROUP_ID_V_START - 1;
+            ELSE
+               GROUP_ID_V_C := 0;
+            END IF;
+
+            GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ',', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            ACCOUNT_ID_V_START := ACCOUNT_ID_V_C + 1;
+            ACCOUNT_ID_V_C :=
+               INSTR (SUBSTR (ACCOUNT_ID_P, ACCOUNT_ID_V_START, 1000), ',', 1);
+
+            IF ACCOUNT_ID_V_C <> 0
+            THEN
+               ACCOUNT_ID_V_C := ACCOUNT_ID_V_C + ACCOUNT_ID_V_START - 1;
+            ELSE
+               ACCOUNT_ID_V_C := 0;
+            END IF;
+
+            ACCOUNT_ID_V_LEN := ACCOUNT_ID_V_C - ACCOUNT_ID_V_START;
+            OPERATION_V_START := OPERATION_V_C + 1;
+            OPERATION_V_C :=
+                 INSTR (SUBSTR (OPERATION_P, OPERATION_V_START, 1000), ',', 1);
+
+            IF OPERATION_V_C <> 0
+            THEN
+               OPERATION_V_C := OPERATION_V_C + OPERATION_V_START - 1;
+            ELSE
+               OPERATION_V_C := 0;
+            END IF;
+
+            OPERATION_V_LEN := OPERATION_V_C - OPERATION_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            V_SELECT :=
+                  ' SELECT ''P''  AS OP_STATUS, CAST('
+               || CA_GROUP_ID_V
+               || ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+            GET_XML_SCHEMA (V_SELECT);
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO UPDATE CAPITAL ADEQUACY ACCOUNTS
+   IF FLAG = 'UA'
+   THEN
+      BEGIN
+         DELETE FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+               WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V;
+
+         GROUP_ID_V_START := 1;
+         GROUP_ID_V_C := INSTR (GROUP_ID_P, ',', GROUP_ID_V_START);
+         GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+         ENTITY_ID_V_START := 1;
+         ENTITY_ID_V_C := INSTR (ENTITY_ID_P, ',', ENTITY_ID_V_START);
+         ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+         ACCOUNT_ID_V_START := 1;
+         ACCOUNT_ID_V_C := INSTR (ACCOUNT_ID_P, ',', ACCOUNT_ID_V_START);
+         ACCOUNT_ID_V_LEN := ACCOUNT_ID_V_C - ACCOUNT_ID_V_START;
+         OPERATION_V_START := 1;
+         OPERATION_V_C := INSTR (OPERATION_P, ',', OPERATION_V_START);
+         OPERATION_V_LEN := OPERATION_V_C - OPERATION_V_START;
+
+         WHILE ACCOUNT_ID_V_C > 0
+         LOOP
+            GROUP_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (GROUP_ID_P,
+                                                       GROUP_ID_V_START,
+                                                       GROUP_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ENTITY_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ENTITY_ID_P,
+                                                       ENTITY_ID_V_START,
+                                                       ENTITY_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            ACCOUNT_ID_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (ACCOUNT_ID_P,
+                                                       ACCOUNT_ID_V_START,
+                                                       ACCOUNT_ID_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+            OPERATION_V :=
+               ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (OPERATION_P,
+                                                       OPERATION_V_START,
+                                                       OPERATION_V_LEN
+                                                      )
+                                              )
+                                       )
+                                ),
+                      0
+                     );
+
+            INSERT INTO BO_CAPITAL_ADEQUACY_GRP_ACC
+                        (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID,
+                         ACCOUNT_ID, OPERATION, SETUP_DATE
+                        )
+                 VALUES (CA_CATEGORY_ID_V, GROUP_ID_V, ENTITY_ID_V,
+                         ACCOUNT_ID_V, OPERATION_V, TODAY_DATE_V
+                        );
+
+            GROUP_ID_V_START := GROUP_ID_V_C + 1;
+            GROUP_ID_V_C :=
+                   INSTR (SUBSTR (GROUP_ID_P, GROUP_ID_V_START, 1000), ',', 1);
+
+            IF GROUP_ID_V_C <> 0
+            THEN
+               GROUP_ID_V_C := GROUP_ID_V_C + GROUP_ID_V_START - 1;
+            ELSE
+               GROUP_ID_V_C := 0;
+            END IF;
+
+            GROUP_ID_V_LEN := GROUP_ID_V_C - GROUP_ID_V_START;
+            ENTITY_ID_V_START := ENTITY_ID_V_C + 1;
+            ENTITY_ID_V_C :=
+                 INSTR (SUBSTR (ENTITY_ID_P, ENTITY_ID_V_START, 1000), ',', 1);
+
+            IF ENTITY_ID_V_C <> 0
+            THEN
+               ENTITY_ID_V_C := ENTITY_ID_V_C + ENTITY_ID_V_START - 1;
+            ELSE
+               ENTITY_ID_V_C := 0;
+            END IF;
+
+            ENTITY_ID_V_LEN := ENTITY_ID_V_C - ENTITY_ID_V_START;
+            ACCOUNT_ID_V_START := ACCOUNT_ID_V_C + 1;
+            ACCOUNT_ID_V_C :=
+               INSTR (SUBSTR (ACCOUNT_ID_P, ACCOUNT_ID_V_START, 1000), ',', 1);
+
+            IF ACCOUNT_ID_V_C <> 0
+            THEN
+               ACCOUNT_ID_V_C := ACCOUNT_ID_V_C + ACCOUNT_ID_V_START - 1;
+            ELSE
+               ACCOUNT_ID_V_C := 0;
+            END IF;
+
+            ACCOUNT_ID_V_LEN := ACCOUNT_ID_V_C - ACCOUNT_ID_V_START;
+            OPERATION_V_START := OPERATION_V_C + 1;
+            OPERATION_V_C :=
+                 INSTR (SUBSTR (OPERATION_P, OPERATION_V_START, 1000), ',', 1);
+
+            IF OPERATION_V_C <> 0
+            THEN
+               OPERATION_V_C := OPERATION_V_C + OPERATION_V_START - 1;
+            ELSE
+               OPERATION_V_C := 0;
+            END IF;
+
+            OPERATION_V_LEN := OPERATION_V_C - OPERATION_V_START;
+         END LOOP;
+
+         IF SQL%ROWCOUNT > 0
+         THEN
+            COMMIT;
+            GET_XML_SCHEMA (F_GET_STATUS ('P'));
+            RETURN;
+         ELSE
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO CALCULATE  CAPITAL ADEQUACY ENTITIES AMOUNT
+  IF FLAG = 'CALCA'
+   THEN
+      
+         YEAR_V :=
+            ROUND (TO_NUMBER (LTRIM (RTRIM (SUBSTR (SETUP_DATE_V, 0, 4)))),
+                   0);
+                   
+           
+      DELETE FROM T_DIFF_BALANCE WHERE CALC_DATE = SETUP_DATE_V;
+      COMMIT;           
+        
+        IF BOS_GET_CURR_EXCHANGE_RATE(SETUP_DATE_V,NULL) = 'F' 
+        THEN
+             GET_XML_SCHEMA (F_GET_STATUS ('F')); 
+        END IF;
+        
+   
+---------------------------------------------------------------------------------------------تحت التسويه                   
+      BOS_DIFF_BALANCE( FLAG => 'E',
+                      UP_TO_DATE_P => SETUP_DATE_V);
+                                
+      FOR REC_DATA IN (SELECT  SUM(FINAL_BALANCE) AS FINAL_BALANCE
+                       FROM T_DIFF_BALANCE
+                       where CALC_DATE = SETUP_DATE_V) 
+      LOOP
+          BOOK_FORMAULA_16_V :=  REC_DATA.FINAL_BALANCE;
+      END LOOP;
+---------------------------------------------------------------------------------------------تحت التسويه        
+                 
+         --SET THE VOLUME FOR ALL AMOUNTS 
+         DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP;
+
+         INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                     (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                      NET_AMOUNT, MARKET_VALUE)
+         
+         (SELECT CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID ,
+          SUM(AMOUNT) AS AMOUNT,0 AS NET_AMOUNT, 0 AS MARKET_VALUE
+                 FROM ((SELECT   A.ACCOUNT_ID, DD.TYPE_ID,CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID ,
+                 
+                        SUM(((CASE WHEN (DD.TYPE_ID = 1 OR DD.TYPE_ID = 4) THEN DEBIT_AMOUNT - CREDIT_AMOUNT ELSE CREDIT_AMOUNT - DEBIT_AMOUNT END) * CASE WHEN DD.EVALUATE=1 THEN BO_CURR_EXCHANGE.EXCHANGE_RATE ELSE C.EXCHANGE_RATE END) * CASE WHEN F.OPERATION = 1 THEN -1 ELSE 1 END) AS AMOUNT
+                                                
+                        FROM BO_JOURNAL_DTL A 
+                        INNER JOIN BO_JOURNAL_HDR C ON A.JOURNAL_ID = C.JOURNAL_ID
+                        INNER JOIN BO_CAPITAL_ADEQUACY_GRP_ACC F ON F.ACCOUNT_ID = A.ACCOUNT_ID
+                        INNER JOIN BO_CHART_OF_ACCOUNT DD ON A.ACCOUNT_ID=DD.ACCOUNT_ID
+                        LEFT JOIN BO_CURR_EXCHANGE ON C.CURRENCY_ID = BO_CURR_EXCHANGE.CURRENCY_ID
+                        WHERE C.POST = 1
+                        AND C.JOURNAL_DATE <= SETUP_DATE_V
+                        GROUP BY A.ACCOUNT_ID, DD.TYPE_ID,CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID)) A
+                        GROUP BY CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID) ;
+
+
+         INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                     (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                      NET_AMOUNT, MARKET_VALUE)
+                      
+            (SELECT CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID,0,0,0 FROM (
+            SELECT DISTINCT A.CA_CATEGORY_ID, A.CA_GROUP_ID, A.ENTITY_ID,0,0,0,ACCOUNT_ID
+            FROM   BO_CAPITAL_ADEQUACY_GRP_DTL A  
+            LEFT JOIN BO_CAPITAL_ADEQUACY_GRP_ACC B ON (A.CA_CATEGORY_ID = B.CA_CATEGORY_ID
+                     AND A.CA_GROUP_ID = B.CA_GROUP_ID
+                     AND A.ENTITY_ID = B.ENTITY_ID
+                     )
+            WHERE  CALCULATED = 2)
+            WHERE ACCOUNT_ID IS NULL                   
+            );                 
+
+
+
+      --GET THE VALUE OF ????? ????? ?????           
+      FOR REC IN (SELECT DEPOSIT_ACCOUNT_ID,DEPOSIT_ACCOUNT_ORDER || '-' || DEPOSIT_ACCOUNT_NO AS DEPOSIT_ACCOUNT_ORDER FROM BO_CLIENT_ACCOUNT_SETUP )
+      LOOP
+          DEPOSIT_ACCOUNT_ID_V := REC.DEPOSIT_ACCOUNT_ID;
+          DEPOSIT_ACCOUNT_ORDER_V := REC.DEPOSIT_ACCOUNT_ORDER;
+      END LOOP;
+      
+      FOR REC_DATA IN(
+        SELECT SUM(BALANCE)AS BALANCE FROM
+        (SELECT 
+            B.ACCOUNT_ID,
+             ABS(SUM((B.CREDIT_AMOUNT* CASE WHEN C.EVALUATE = 1 THEN BO_CURR_EXCHANGE.EXCHANGE_RATE ELSE E.EXCHANGE_RATE END )
+          - (B.DEBIT_AMOUNT* CASE WHEN C.EVALUATE = 1 THEN BO_CURR_EXCHANGE.EXCHANGE_RATE ELSE E.EXCHANGE_RATE END ))) AS BALANCE
+        FROM BO_CHART_OF_ACCOUNT C
+        INNER JOIN BO_JOURNAL_DTL B ON C.ACCOUNT_ID = B.ACCOUNT_ID
+        INNER JOIN BO_JOURNAL_HDR E ON B.JOURNAL_ID = E.JOURNAL_ID
+        INNER JOIN BO_CURR_EXCHANGE ON E.CURRENCY_ID = BO_CURR_EXCHANGE.CURRENCY_ID
+        
+        WHERE (C.ACCOUNT_ORDER LIKE DEPOSIT_ACCOUNT_ORDER_V || '%')
+        AND E.JOURNAL_DATE <= SETUP_DATE_V
+        AND C.BRANCH = 2
+        GROUP BY  B.ACCOUNT_ID   
+        HAVING SUM((B.CREDIT_AMOUNT* CASE WHEN C.EVALUATE = 1 THEN BO_CURR_EXCHANGE.EXCHANGE_RATE ELSE E.EXCHANGE_RATE END )
+          - (B.DEBIT_AMOUNT* CASE WHEN C.EVALUATE = 1 THEN BO_CURR_EXCHANGE.EXCHANGE_RATE ELSE E.EXCHANGE_RATE END ))>0))
+      LOOP
+        BOOK_FORMAULA_15_V := REC_DATA.BALANCE ;               
+      END LOOP;
+      
+      BOOK_FORMAULA_15_V := BOOK_FORMAULA_15_V - nvl(BOOK_FORMAULA_16_V,0);  -------------------------------------------------------تحت التسويه
+      --GET THE DATA OF (LOAN TO PORTFOLIO REPORT) TABLE BO_MARGIN_RPT_TEMP 
+      API_CAPITAL_ADEQUACY_RPT(FLAG => 'P',
+                               UP_TO_DATE_P => SETUP_DATE_V,
+                               INTERNAL_P => '1',
+                               P_CURSOR =>P_CURSOR1);
+                                
+      FOR REC_DATA IN (SELECT SUM(BALANCE)AS BALANCE,
+                              SUM(CASE WHEN BALANCE < (COLLATERALS + PORTFOLIO_VALUE) * 0.5 THEN BALANCE ELSE (COLLATERALS + PORTFOLIO_VALUE) * 0.5 END )WEIGHTED,
+                              SUM(ABOVE_TOTAL_MARGIN)ABOVE_TOTAL_MARGIN
+                       FROM BO_MARGIN_RPT_TEMP ) 
+      LOOP
+          BOOK_FORMAULA_1_V := REC_DATA.BALANCE;
+          WEIGHTED_FORMAULA_1_V := REC_DATA.WEIGHTED;
+          BOOK_FORMAULA_3_V := REC_DATA.ABOVE_TOTAL_MARGIN ;
+      END LOOP;
+      
+     API_LINKED_GROUP( FLAG => 'P',
+                      UP_TO_DATE_P => SETUP_DATE_V,                  
+                      INTERNAL_P => '1',
+                      P_CURSOR => P_CURSOR2);
+                                
+      FOR REC_DATA IN (SELECT  SUM(COMMITMENT) AS COMMITMENT
+                       FROM BO_LINKED_GROUP_MR_TEMP group by GROUP_ID ) 
+      LOOP
+         
+          BOOK_FORMAULA_3_V := BOOK_FORMAULA_3_V + (REC_DATA.COMMITMENT);
+      END LOOP;
+
+      
+      --GET THE DATA OF (ANALYTICAL RETAIL REPORT) TABLE BO_ANALYTICAL_CLIENTS 
+      API_ANALYTICAL_CLIENTS_CA(FLAG => 'GA',
+                                UP_TO_DATE_P => SETUP_DATE_V,                               
+                                INTERNAL_P => '1',
+                                P_CURSOR => P_CURSOR3 );
+                                
+      FOR REC_DATA IN (SELECT SUM(BALANCE_100)AS BALANCE_100,
+                              SUM(BALANCE_80)AS BALANCE_80,
+                              SUM(BALANCE_50)AS BALANCE_50,
+                              SUM(BALANCE_DIFF)AS BALANCE_DIFF,
+                              SUM(WEIGHTED_BALANCE_100)AS WEIGHTED_BALANCE_100,
+                              SUM(WEIGHTED_BALANCE_80)AS WEIGHTED_BALANCE_80,
+                              SUM(WEIGHTED_BALANCE_50)AS WEIGHTED_BALANCE_50
+                       FROM BO_ANALYTICAL_CLIENTS ) 
+      LOOP
+          BOOK_FORMAULA_11_V := REC_DATA.BALANCE_100;
+          WEIGHTED_FORMAULA_11_V := REC_DATA.WEIGHTED_BALANCE_100;
+          BOOK_FORMAULA_12_V := REC_DATA.BALANCE_80;
+          WEIGHTED_FORMAULA_12_V := REC_DATA.WEIGHTED_BALANCE_80;
+          BOOK_FORMAULA_13_V := REC_DATA.BALANCE_50;
+          WEIGHTED_FORMAULA_13_V := REC_DATA.WEIGHTED_BALANCE_50;
+          BOOK_FORMAULA_14_V := REC_DATA.BALANCE_DIFF;
+      END LOOP;
+                                
+      --GET THE DATA OF (ANALYTICAL DVP REPORT) TABLE BO_ANALYTICAL_CLIENTS 
+     API_ANALYTICAL_CLIENTS_CA(FLAG => 'GDVP',
+                               UP_TO_DATE_P => SETUP_DATE_V,                               
+                               INTERNAL_P => '1',
+                               P_CURSOR => P_CURSOR4 );
+                                
+      FOR REC_DATA IN (SELECT SUM(BALANCE_100)AS BALANCE_100,
+                              SUM(BALANCE_80)AS BALANCE_80,
+                              SUM(BALANCE_50)AS BALANCE_50,
+                              SUM(BALANCE_DIFF)AS BALANCE_DIFF,
+                              SUM(WEIGHTED_BALANCE_100)AS WEIGHTED_BALANCE_100,
+                              SUM(WEIGHTED_BALANCE_80)AS WEIGHTED_BALANCE_80,
+                              SUM(WEIGHTED_BALANCE_50)AS WEIGHTED_BALANCE_50
+                       FROM BO_ANALYTICAL_CLIENTS ) 
+      LOOP
+          BOOK_FORMAULA_4_V := REC_DATA.BALANCE_100;
+          WEIGHTED_FORMAULA_4_V := REC_DATA.WEIGHTED_BALANCE_100;
+          BOOK_FORMAULA_6_V := REC_DATA.BALANCE_80;
+          WEIGHTED_FORMAULA_6_V := REC_DATA.WEIGHTED_BALANCE_80;
+          BOOK_FORMAULA_5_V := REC_DATA.BALANCE_50;
+          WEIGHTED_FORMAULA_5_V := REC_DATA.WEIGHTED_BALANCE_50;
+          BOOK_FORMAULA_10_V := REC_DATA.BALANCE_DIFF;
+      END LOOP;
+                                
+      --GET THE DATA OF (ANALYTICAL ASSET MANAGEMENT REPORT) TABLE BO_ANALYTICAL_ASSET_CLIENTS 
+       API_ANALYTICAL_CLIENTS_CA(FLAG => 'GASS',
+                               UP_TO_DATE_P => SETUP_DATE_V,                               
+                               INTERNAL_P => '1',
+                               P_CURSOR => P_CURSOR5 );
+      
+      FOR REC_DATA IN (SELECT SUM(BALANCE_T0_4)AS BALANCE_T0_4,
+                              SUM(BALANCE_T5)AS BALANCE_T5,
+                              SUM(WEIGHTED_BALANCE_T0_4)AS WEIGHTED_BALANCE_T0_4
+                       FROM BO_ANALYTICAL_ASSET_CLIENTS ) 
+      LOOP
+          BOOK_FORMAULA_8_V := REC_DATA.BALANCE_T0_4;
+          WEIGHTED_FORMAULA_8_V :=REC_DATA.WEIGHTED_BALANCE_T0_4;
+          BOOK_FORMAULA_9_V :=  REC_DATA.BALANCE_T5;
+      END LOOP;
+      
+      --GET THE DATA OF (WEEKLY MARGIN CUSTOMERS REPORT) TABLE BO_DTL_DAILY_LOAN_TEMP 
+      API_DTL_DAILY_LOAN_RPT(FLAG => 'P',
+                             UP_TO_DATE_P => SETUP_DATE_V,
+                             INTERNAL_P =>'1',
+                             P_CURSOR => P_CURSOR6
+                             );
+      
+      FOR REC_DATA IN (SELECT SUM(COMMITMENT)AS COMMITMENT
+                       FROM BO_DTL_DAILY_LOAN_TEMP ) 
+      LOOP
+          BOOK_FORMAULA_2_V := REC_DATA.COMMITMENT;
+      END LOOP;
+
+      -- CALAC Q2 
+      FOR REC IN (SELECT CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, FORMULA_ID,PERCENTAGE
+                    FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+                   WHERE CALCULATED = 1)
+      LOOP
+         CA_CATEGORY_ID_V := REC.CA_CATEGORY_ID;
+         CA_GROUP_ID_V := REC.CA_GROUP_ID;
+         ENTITY_ID_V := REC.ENTITY_ID;
+         FORMULA_ID_V := REC.FORMULA_ID;
+
+         IF FORMULA_ID_V IS NOT NULL
+         THEN
+            IF FORMULA_ID_V = 1
+            THEN
+               BEGIN                  
+                  IF WEIGHTED_FORMAULA_1_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_1_V := BOOK_FORMAULA_1_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_1_V,                             
+                        WEIGHTED_FORMAULA_1_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 2
+            THEN
+               BEGIN              
+                  IF WEIGHTED_FORMAULA_2_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_2_V := BOOK_FORMAULA_2_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_2_V,                             
+                        WEIGHTED_FORMAULA_2_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 3
+            THEN
+               BEGIN              
+                  IF WEIGHTED_FORMAULA_3_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_3_V := BOOK_FORMAULA_3_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_3_V,                             
+                        WEIGHTED_FORMAULA_3_V,
+                        0);
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 4
+            THEN
+               BEGIN              
+                  IF WEIGHTED_FORMAULA_4_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_4_V := BOOK_FORMAULA_4_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_4_V,                             
+                        WEIGHTED_FORMAULA_4_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 5
+            THEN
+               BEGIN              
+                  IF WEIGHTED_FORMAULA_5_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_5_V := BOOK_FORMAULA_5_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_5_V,                             
+                        WEIGHTED_FORMAULA_5_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 6
+            THEN
+               BEGIN          
+                  IF WEIGHTED_FORMAULA_6_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_6_V := BOOK_FORMAULA_6_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_6_V,                             
+                        WEIGHTED_FORMAULA_6_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 7
+            THEN
+               BEGIN          
+                  IF WEIGHTED_FORMAULA_7_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_7_V := BOOK_FORMAULA_7_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_7_V,                             
+                        WEIGHTED_FORMAULA_7_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 8
+            THEN
+               BEGIN          
+                  IF WEIGHTED_FORMAULA_8_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_8_V := BOOK_FORMAULA_8_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_8_V,                             
+                        WEIGHTED_FORMAULA_8_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 9
+            THEN
+               BEGIN          
+                  IF WEIGHTED_FORMAULA_9_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_9_V := BOOK_FORMAULA_9_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_9_V,                             
+                        WEIGHTED_FORMAULA_9_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 10
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_10_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_10_V := BOOK_FORMAULA_10_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_10_V,                             
+                        WEIGHTED_FORMAULA_10_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 11
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_11_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_11_V := BOOK_FORMAULA_11_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_11_V,                             
+                        WEIGHTED_FORMAULA_11_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 12
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_12_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_12_V := BOOK_FORMAULA_12_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_12_V,                             
+                        WEIGHTED_FORMAULA_12_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 13
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_13_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_13_V := BOOK_FORMAULA_13_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_13_V,                             
+                        WEIGHTED_FORMAULA_13_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 14
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_14_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_14_V := BOOK_FORMAULA_14_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_14_V,                             
+                        WEIGHTED_FORMAULA_14_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+            ELSIF FORMULA_ID_V = 15
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_15_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_15_V := BOOK_FORMAULA_15_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_15_V,                             
+                        WEIGHTED_FORMAULA_15_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+-----------------------------------------------------------------------------------------------------تحت التسوية               
+            ELSIF FORMULA_ID_V = 16
+            THEN
+               BEGIN
+                  IF WEIGHTED_FORMAULA_16_V IS NULL
+                  THEN
+                    WEIGHTED_FORMAULA_16_V := BOOK_FORMAULA_16_V * REC.PERCENTAGE;
+                  END IF;
+                  
+                  DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+                        WHERE CA_CATEGORY_ID = CA_CATEGORY_ID_V
+                          AND CA_GROUP_ID = CA_GROUP_ID_V
+                          AND ENTITY_ID = ENTITY_ID_V;
+                          
+                  INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP
+                              (CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, AMOUNT,
+                               NET_AMOUNT, MARKET_VALUE)
+                  VALUES(CA_CATEGORY_ID_V,
+                        CA_GROUP_ID_V,
+                        ENTITY_ID_V,
+                        BOOK_FORMAULA_16_V,                             
+                        WEIGHTED_FORMAULA_16_V,
+                        0);
+
+                  IF SQL%ROWCOUNT < 0
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+                  END IF;
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     ROLLBACK;
+                     GET_XML_SCHEMA (F_GET_STATUS ('F'));
+                     RETURN;
+               END;
+-----------------------------------------------------------------------------------------------------تحت التسوية               
+
+            END IF;
+         END IF;
+      END LOOP;
+
+
+      
+     COMMIT;
+     GET_XML_SCHEMA (F_GET_STATUS ('P'));
+     RETURN;
+   END IF;
+
+   --TO GET CALCULATED CAPITAL ADEQUACY INFO 
+   IF FLAG = 'GCA'
+   THEN
+      BEGIN
+         V_SELECT :=
+            ' SELECT    '
+         || ' COALESCE(CAST(C.CA_CATEGORY_ID AS VARCHAR2 (20)), ''0'') AS CA_CATEGORY_ID,'
+         || ' COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(20)),''0'') AS CA_GROUP_ID, '
+         || ' COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(20)),''0'') AS ENTITY_ID, '
+         || ' COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'' '') AS ENTITY_NAME_EN,'
+         || ' COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'' '') AS ENTITY_NAME_AR, '
+         || ' COALESCE(CAST(A.AMOUNT AS VARCHAR2(20)),''0'') AS AMOUNT, '
+         || ' COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(20)),''0'') AS MARKET_VALUE ,'
+         || ' COALESCE(CAST(A.NET_AMOUNT AS VARCHAR2(20)),''0'') AS NET_AMOUNT '
+         || ' FROM BO_CAPITAL_ADEQUACY_CALC_TEMP A '
+         || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID AND A.CA_GROUP_ID = B.CA_GROUP_ID AND A.ENTITY_ID = B.ENTITY_ID'
+         || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR C ON B.CA_GROUP_ID = C.CA_GROUP_ID AND B.CA_CATEGORY_ID = C.CA_CATEGORY_ID';
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+
+   --TO GET INFO PRINT FOR CAPITAL ADEQUACY REPORT 
+   IF FLAG = 'PCA'
+   THEN
+      BEGIN
+         V_SELECT :=
+               ' SELECT '
+            || ' COALESCE(CAST(A.CA_CATEGORY_ID AS VARCHAR2(10)),'' 0 '') AS CA_CATEGORY_ID,'
+            || ' COALESCE(CAST(D.CA_CATEGORY_NAME_EN AS VARCHAR2(200)),'' '') AS CA_CATEGORY_NAME_EN,'
+            || ' COALESCE(CAST(D.CA_CATEGORY_NAME_AR AS VARCHAR2(200)),'' '') AS CA_CATEGORY_NAME_AR, '
+            || ' COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),'' 0 '') AS CA_GROUP_ID,'
+            || ' COALESCE(CAST(C.CA_GROUP_NAME_EN AS VARCHAR2(200)),'' '') AS CA_GROUP_NAME_EN,'
+            || ' COALESCE(CAST(C.CA_GROUP_NAME_AR AS VARCHAR2(200)),'' '') AS CA_GROUP_NAME_AR, '
+            || ' COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),'' 0 '') AS ENTITY_ID,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'' '') AS ENTITY_NAME_EN,'
+            || ' COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'' '') AS ENTITY_NAME_AR, '
+            || ' COALESCE(CAST(B.PERCENTAGE AS VARCHAR2(10)),'' 0 '') AS PERCENTAGE,'
+            || ' COALESCE(CAST(A.AMOUNT AS VARCHAR2(15)),'' 0 '') AS AMOUNT, '
+            || ' COALESCE(CAST(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ELSE A.NET_AMOUNT END AS VARCHAR2(15)),'' 0 '') AS AMOUNT_NET, '
+            || ' COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(15)),'' 0 '') AS MARKET_VALUE, '
+            || ' COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (1,2,3,4,5) 
+                                                THEN NVL(A.AMOUNT,0) 
+                                            ELSE 0 END AS VARCHAR2 (15)), '' 0 '') AS ASSETS ,'
+            || ' COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (1,2,3,4,5) 
+                                               THEN NVL(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ELSE A.NET_AMOUNT END,0) 
+                                            ELSE 0 END AS VARCHAR2 (15)), '' 0 '') AS NET_ASSETS ,'
+            || ' COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (6,7,8,9,10) 
+                                               THEN NVL(A.AMOUNT,0) 
+                                            ELSE  0 END AS VARCHAR2 (15)), '' 0 '') AS LIABILITES ,'
+            || ' COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (6,7,8,9,10) 
+                                               THEN NVL(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ELSE A.NET_AMOUNT END,0) 
+                                            ELSE  0  END AS VARCHAR2 (15)), '' 0 '') AS NET_LIABILITES ,'
+            || ' COALESCE(CAST(R.CURRENCY_FRACTIONS AS VARCHAR2(15)),'' 0 '') AS CURRENCY_FRACTIONS '
+            || ' FROM BO_CAPITAL_ADEQUACY_SETUP A'
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID  AND A.CA_GROUP_ID = B.CA_GROUP_ID  AND A.ENTITY_ID = B.ENTITY_ID '
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR C  ON B.CA_CATEGORY_ID = C.CA_CATEGORY_ID  AND B.CA_GROUP_ID = C.CA_GROUP_ID '
+            || ' INNER JOIN BO_CAPITAL_ADEQUACY_CATEGORY D ON C.CA_CATEGORY_ID = D.CA_CATEGORY_ID'
+            || ' INNER JOIN T_CURRENCY R ON DEFAULT_CURRENCY = 1 '
+            || ' WHERE A.SETUP_DATE = '
+            || SETUP_DATE_V
+            || ' ORDER BY A.CA_CATEGORY_ID,A.CA_GROUP_ID,A.ENTITY_ID ASC  ';
+         --DBMS_OUTPUT.PUT_LINE (V_SELECT);
+         BUILD_TYPE_OBJECTS (VSP_NAME, FLAG, V_SELECT);
+         RETURN;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+            GET_XML_SCHEMA (F_GET_STATUS ('F'));
+            RETURN;
+      END;
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      ROLLBACK;
+      GET_XML_SCHEMA (F_GET_STATUS ('UNEXCEPCTED ERROR'));
+      RETURN;
+END BOS_CAPITAL_ADEQUACY;

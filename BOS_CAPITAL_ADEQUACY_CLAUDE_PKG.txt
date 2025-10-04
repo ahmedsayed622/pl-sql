@@ -1,0 +1,2166 @@
+create or replace PACKAGE BOS_CAPITAL_ADEQUACY_CLAUDE_PKG AS
+  
+  -- ========== Type Definitions ==========
+  
+  -- Common variables record
+  TYPE t_common_vars IS RECORD (
+    CA_CATEGORY_ID         NUMBER(10, 0),
+    CA_GROUP_ID            NUMBER(10, 0),
+    CA_GROUP_NAME_EN       VARCHAR2(200),
+    CA_GROUP_NAME_AR       VARCHAR2(200),
+    SETUP_DATE             NUMBER(10, 0),
+    TODAY_DATE             NUMBER(10, 0),
+    NEXT_DATE_4            NUMBER(10, 0),
+    NEXT_DATE_5            NUMBER(10, 0),
+    NEXT_DATE_6            NUMBER(10, 0),
+    NEXT_DATE_8            NUMBER(10, 0)
+  );
+
+  -- Entity detail record for bulk operations
+  TYPE t_entity_detail IS RECORD (
+    ENTITY_ID              NUMBER(10, 0),
+    ENTITY_NAME_EN         VARCHAR2(400),
+    ENTITY_NAME_AR         VARCHAR2(400),
+    PERCENTAGE             NUMBER(16, 3),
+    CALCULATED             NUMBER(10, 0)
+  );
+
+  TYPE t_entity_detail_list IS TABLE OF t_entity_detail INDEX BY PLS_INTEGER;
+
+  -- Account mapping record
+  TYPE t_account_mapping IS RECORD (
+    CA_GROUP_ID            NUMBER(10, 0),
+    ENTITY_ID              NUMBER(10, 0),
+    ACCOUNT_ID             NUMBER(10, 0),
+    OPERATION              NUMBER(10, 0)
+  );
+
+  TYPE t_account_mapping_list IS TABLE OF t_account_mapping INDEX BY PLS_INTEGER;
+
+  -- Setup data record
+  TYPE t_setup_data IS RECORD (
+    CA_CATEGORY_ID         NUMBER(10, 0),
+    CA_GROUP_ID            NUMBER(10, 0),
+    ENTITY_ID              NUMBER(10, 0),
+    AMOUNT                 NUMBER(16, 3),
+    NET_AMOUNT             NUMBER(16, 3),
+    MARKET_VALUE           NUMBER(16, 3)
+  );
+
+  TYPE t_setup_data_list IS TABLE OF t_setup_data INDEX BY PLS_INTEGER;
+
+  -- Calculation record for BULK operations
+  TYPE t_calc_record IS RECORD (
+    CA_CATEGORY_ID         NUMBER(10, 0),
+    CA_GROUP_ID            NUMBER(10, 0),
+    ENTITY_ID              NUMBER(10, 0),
+    FORMULA_ID             NUMBER(10, 0),
+    PERCENTAGE             NUMBER(16, 3),
+    BOOK_VALUE             NUMBER(16, 3),
+    WEIGHTED_VALUE         NUMBER(16, 3)
+  );
+
+  TYPE t_calc_record_list IS TABLE OF t_calc_record INDEX BY PLS_INTEGER;
+
+  -- ========== Utility Procedures ==========
+
+  PROCEDURE initialize_common_vars(
+    p_ca_category_id_in  IN VARCHAR2,
+    p_ca_group_id_in     IN VARCHAR2,
+    p_ca_group_name_en   IN VARCHAR2,
+    p_ca_group_name_ar   IN VARCHAR2,
+    p_setup_date         IN VARCHAR2,
+    p_vars               OUT t_common_vars
+  );
+
+  PROCEDURE parse_clob_to_numbers(
+    p_clob_data    IN CLOB,
+    p_delimiter    IN VARCHAR2,
+    p_values       OUT SYS.ODCINUMBERLIST
+  );
+
+  PROCEDURE parse_clob_to_strings(
+    p_clob_data    IN CLOB,
+    p_delimiter    IN VARCHAR2,
+    p_values       OUT SYS.ODCIVARCHAR2LIST
+  );
+
+  PROCEDURE bulk_insert_entity_details(
+    p_ca_category_id  IN NUMBER,
+    p_ca_group_id     IN NUMBER,
+    p_entities        IN t_entity_detail_list
+  );
+
+  PROCEDURE bulk_insert_account_mappings(
+    p_ca_category_id  IN NUMBER,
+    p_mappings        IN t_account_mapping_list,
+    p_setup_date      IN NUMBER
+  );
+
+  -- ========== Main Procedures ==========
+
+  PROCEDURE BOS_INSERT_CAPITAL_ADEQUACY_I (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_UPDATE_CAPITAL_ADEQUACY_U (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_DELETE_CAPITAL_ADEQUACY_D (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_DELETE_ADEQUACY_ENTITIY_DR (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_CAPITAL_ADEQUACY_G (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_ADEQUACY_CATEGORY_GAC (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_GROUPS_GG (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_ENTITIES_GE (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_ACCOUNTS_GA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_INSERT_SETUP_IS (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_UPDATE_SETUP_US (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_ADEQUACY_GRS (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_INSERT_ACCOUNTS_IA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_UPDATE_ACCOUNTS_UA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_CALCULATE_ADEQUACY_CALCA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_GET_CALCULATED_ADEQUACY_GCA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+  PROCEDURE BOS_PRINT_APITAL_ADEQUACY_PCA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  );
+
+END BOS_CAPITAL_ADEQUACY_CLAUDE_PKG;
+
+
+
+create or replace PACKAGE BODY BOS_CAPITAL_ADEQUACY_CLAUDE_PKG AS
+
+  -- ========== Constants ==========
+  C_VSP_NAME CONSTANT VARCHAR2(60) := UPPER('BOS_CAPITAL_ADEQUACY');
+  C_DELIMITER_SEMICOLON CONSTANT VARCHAR2(1) := ';';
+  C_DELIMITER_COMMA CONSTANT VARCHAR2(1) := ',';
+  C_BATCH_SIZE CONSTANT PLS_INTEGER := 1000; -- للـ BULK COLLECT LIMIT
+
+  -- ========== Utility Procedures ==========
+
+  ----------------------------------------------------------------------------
+  -- Initialize common variables
+  ----------------------------------------------------------------------------
+  PROCEDURE initialize_common_vars(
+    p_ca_category_id_in  IN VARCHAR2,
+    p_ca_group_id_in     IN VARCHAR2,
+    p_ca_group_name_en   IN VARCHAR2,
+    p_ca_group_name_ar   IN VARCHAR2,
+    p_setup_date         IN VARCHAR2,
+    p_vars               OUT t_common_vars
+  ) IS
+  BEGIN
+    p_vars.TODAY_DATE := EDATA_GETDATE(SYSDATE);
+
+    p_vars.CA_CATEGORY_ID := CASE WHEN p_ca_category_id_in IS NULL 
+                               THEN NULL 
+                               ELSE TO_NUMBER(p_ca_category_id_in) 
+                             END;
+
+    p_vars.CA_GROUP_ID := CASE WHEN p_ca_group_id_in IS NULL 
+                            THEN NULL 
+                            ELSE TO_NUMBER(p_ca_group_id_in) 
+                          END;
+
+    p_vars.CA_GROUP_NAME_EN := p_ca_group_name_en;
+    p_vars.CA_GROUP_NAME_AR := p_ca_group_name_ar;
+
+    p_vars.SETUP_DATE := CASE WHEN p_setup_date IS NULL 
+                           THEN NULL 
+                           ELSE TO_NUMBER(p_setup_date) 
+                         END;
+
+    IF p_vars.SETUP_DATE IS NOT NULL THEN
+      p_vars.NEXT_DATE_4 := EDATA_GETNEXTWORKINGDAY(p_vars.SETUP_DATE, 4);
+      p_vars.NEXT_DATE_5 := EDATA_GETNEXTWORKINGDAY(p_vars.SETUP_DATE, 5);
+      p_vars.NEXT_DATE_6 := EDATA_GETNEXTWORKINGDAY(p_vars.SETUP_DATE, 6);
+      p_vars.NEXT_DATE_8 := EDATA_GETNEXTWORKINGDAY(p_vars.SETUP_DATE, 8);
+    END IF;
+  END initialize_common_vars;
+
+  ----------------------------------------------------------------------------
+  -- Parse CLOB to numbers using BULK
+  ----------------------------------------------------------------------------
+  PROCEDURE parse_clob_to_numbers(
+    p_clob_data    IN CLOB,
+    p_delimiter    IN VARCHAR2,
+    p_values       OUT SYS.ODCINUMBERLIST
+  ) IS
+    v_start_pos NUMBER := 1;
+    v_end_pos   NUMBER;
+    v_value     VARCHAR2(1000);
+  BEGIN
+    p_values := SYS.ODCINUMBERLIST();
+
+    IF p_clob_data IS NULL THEN
+      RETURN;
+    END IF;
+
+    LOOP
+      v_end_pos := INSTR(p_clob_data, p_delimiter, v_start_pos);
+
+      IF v_end_pos = 0 THEN
+        EXIT;
+      END IF;
+
+      v_value := LTRIM(RTRIM(SUBSTR(p_clob_data, v_start_pos, v_end_pos - v_start_pos)));
+
+      IF v_value IS NOT NULL THEN
+        p_values.EXTEND;
+        p_values(p_values.COUNT) := TO_NUMBER(v_value);
+      END IF;
+
+      v_start_pos := v_end_pos + 1;
+    END LOOP;
+  END parse_clob_to_numbers;
+
+  ----------------------------------------------------------------------------
+  -- Parse CLOB to strings using BULK
+  ----------------------------------------------------------------------------
+  PROCEDURE parse_clob_to_strings(
+    p_clob_data    IN CLOB,
+    p_delimiter    IN VARCHAR2,
+    p_values       OUT SYS.ODCIVARCHAR2LIST
+  ) IS
+    v_start_pos NUMBER := 1;
+    v_end_pos   NUMBER;
+    v_value     VARCHAR2(4000);
+  BEGIN
+    p_values := SYS.ODCIVARCHAR2LIST();
+
+    IF p_clob_data IS NULL THEN
+      RETURN;
+    END IF;
+
+    LOOP
+      v_end_pos := INSTR(p_clob_data, p_delimiter, v_start_pos);
+
+      IF v_end_pos = 0 THEN
+        EXIT;
+      END IF;
+
+      v_value := LTRIM(RTRIM(SUBSTR(p_clob_data, v_start_pos, v_end_pos - v_start_pos)));
+
+      IF v_value IS NOT NULL THEN
+        p_values.EXTEND;
+        p_values(p_values.COUNT) := v_value;
+      END IF;
+
+      v_start_pos := v_end_pos + 1;
+    END LOOP;
+  END parse_clob_to_strings;
+
+  ----------------------------------------------------------------------------
+  -- BULK INSERT Entity Details (استخدام FORALL)
+  ----------------------------------------------------------------------------
+  PROCEDURE bulk_insert_entity_details(
+    p_ca_category_id  IN NUMBER,
+    p_ca_group_id     IN NUMBER,
+    p_entities        IN t_entity_detail_list
+  ) IS
+    TYPE t_number_tab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+    TYPE t_varchar_tab IS TABLE OF VARCHAR2(400) INDEX BY PLS_INTEGER;
+
+    v_entity_ids      t_number_tab;
+    v_names_en        t_varchar_tab;
+    v_names_ar        t_varchar_tab;
+    v_percentages     t_number_tab;
+    v_calculated      t_number_tab;
+    v_ca_category_ids t_number_tab;
+    v_ca_group_ids    t_number_tab;
+    v_next_entity_id  NUMBER;
+  BEGIN
+    IF p_entities.COUNT = 0 THEN
+      RETURN;
+    END IF;
+
+    -- Get starting ENTITY_ID
+    SELECT NVL(MAX(ENTITY_ID), 0)
+    INTO v_next_entity_id
+    FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+    WHERE CA_GROUP_ID = p_ca_group_id
+      AND CA_CATEGORY_ID = p_ca_category_id;
+
+    -- Prepare arrays for FORALL
+    FOR i IN 1..p_entities.COUNT LOOP
+      v_next_entity_id := v_next_entity_id + 1;
+      v_entity_ids(i) := v_next_entity_id;
+      v_names_en(i) := p_entities(i).ENTITY_NAME_EN;
+      v_names_ar(i) := p_entities(i).ENTITY_NAME_AR;
+      v_percentages(i) := p_entities(i).PERCENTAGE;
+      v_calculated(i) := p_entities(i).CALCULATED;
+      v_ca_category_ids(i) := p_ca_category_id;
+      v_ca_group_ids(i) := p_ca_group_id;
+    END LOOP;
+
+    -- FORALL: Single context switch for all INSERTs
+    FORALL i IN 1..v_entity_ids.COUNT
+      INSERT INTO BO_CAPITAL_ADEQUACY_GRP_DTL (
+        CA_GROUP_ID,
+        ENTITY_ID,
+        ENTITY_NAME_EN,
+        ENTITY_NAME_AR,
+        PERCENTAGE,
+        CA_CATEGORY_ID,
+        CALCULATED
+      ) VALUES (
+        v_ca_group_ids(i),
+        v_entity_ids(i),
+        v_names_en(i),
+        v_names_ar(i),
+        v_percentages(i),
+        v_ca_category_ids(i),
+        v_calculated(i)
+      );
+
+  END bulk_insert_entity_details;
+
+  ----------------------------------------------------------------------------
+  -- BULK INSERT Account Mappings (استخدام FORALL)
+  ----------------------------------------------------------------------------
+  PROCEDURE bulk_insert_account_mappings(
+    p_ca_category_id  IN NUMBER,
+    p_mappings        IN t_account_mapping_list,
+    p_setup_date      IN NUMBER
+  ) IS
+    TYPE t_number_tab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+
+    v_ca_category_ids t_number_tab;
+    v_ca_group_ids    t_number_tab;
+    v_entity_ids      t_number_tab;
+    v_account_ids     t_number_tab;
+    v_operations      t_number_tab;
+    v_setup_dates     t_number_tab;
+  BEGIN
+    IF p_mappings.COUNT = 0 THEN
+      RETURN;
+    END IF;
+
+    -- Prepare arrays
+    FOR i IN 1..p_mappings.COUNT LOOP
+      v_ca_category_ids(i) := p_ca_category_id;
+      v_ca_group_ids(i) := p_mappings(i).CA_GROUP_ID;
+      v_entity_ids(i) := p_mappings(i).ENTITY_ID;
+      v_account_ids(i) := p_mappings(i).ACCOUNT_ID;
+      v_operations(i) := p_mappings(i).OPERATION;
+      v_setup_dates(i) := p_setup_date;
+    END LOOP;
+
+    -- FORALL: Bulk insert
+    FORALL i IN 1..v_ca_group_ids.COUNT
+      INSERT INTO BO_CAPITAL_ADEQUACY_GRP_ACC (
+        CA_CATEGORY_ID,
+        CA_GROUP_ID,
+        ENTITY_ID,
+        ACCOUNT_ID,
+        OPERATION,
+        SETUP_DATE
+      ) VALUES (
+        v_ca_category_ids(i),
+        v_ca_group_ids(i),
+        v_entity_ids(i),
+        v_account_ids(i),
+        v_operations(i),
+        v_setup_dates(i)
+      );
+
+  END bulk_insert_account_mappings;
+
+  -- ========== Main Procedures ==========
+
+  ----------------------------------------------------------------------------
+  -- BOS_INSERT_CAPITAL_ADEQUACY_I (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_INSERT_CAPITAL_ADEQUACY_I (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars        t_common_vars;
+    v_entities           t_entity_detail_list;
+    v_entity_names_en    SYS.ODCIVARCHAR2LIST;
+    v_entity_names_ar    SYS.ODCIVARCHAR2LIST;
+    v_percentages        SYS.ODCINUMBERLIST;
+    v_calculated         SYS.ODCINUMBERLIST;
+    v_select             VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'I' THEN
+      -- Get next group ID
+      SELECT NVL(MAX(CA_GROUP_ID), 0) + 1
+      INTO v_common_vars.CA_GROUP_ID
+      FROM BO_CAPITAL_ADEQUACY_GRP_HDR
+      WHERE CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID;
+
+      -- Insert header
+      INSERT INTO BO_CAPITAL_ADEQUACY_GRP_HDR (
+        CA_GROUP_ID, CA_GROUP_NAME_EN, CA_GROUP_NAME_AR, CA_CATEGORY_ID
+      ) VALUES (
+        v_common_vars.CA_GROUP_ID, v_common_vars.CA_GROUP_NAME_EN,
+        v_common_vars.CA_GROUP_NAME_AR, v_common_vars.CA_CATEGORY_ID
+      );
+
+      -- Parse CLOB parameters
+      parse_clob_to_strings(ENTITY_NAME_EN_P, C_DELIMITER_SEMICOLON, v_entity_names_en);
+      parse_clob_to_strings(ENTITY_NAME_AR_P, C_DELIMITER_SEMICOLON, v_entity_names_ar);
+      parse_clob_to_numbers(PERCENTAGE_P, C_DELIMITER_SEMICOLON, v_percentages);
+      parse_clob_to_numbers(CLACULATED_P, C_DELIMITER_SEMICOLON, v_calculated);
+
+      -- Build entity collection
+      FOR i IN 1..v_entity_names_en.COUNT LOOP
+        v_entities(i).ENTITY_NAME_EN := v_entity_names_en(i);
+        v_entities(i).ENTITY_NAME_AR := v_entity_names_ar(i);
+        v_entities(i).PERCENTAGE := v_percentages(i);
+        v_entities(i).CALCULATED := v_calculated(i);
+      END LOOP;
+
+      -- BULK insert details
+      bulk_insert_entity_details(
+        v_common_vars.CA_CATEGORY_ID,
+        v_common_vars.CA_GROUP_ID,
+        v_entities
+      );
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        v_select := 'SELECT ''P'' AS OP_STATUS, CAST(' || 
+                    v_common_vars.CA_GROUP_ID || 
+                    ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+        GET_XML_SCHEMA(v_select);
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_INSERT_CAPITAL_ADEQUACY_I;
+
+  ----------------------------------------------------------------------------
+  -- BOS_UPDATE_CAPITAL_ADEQUACY_U (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_UPDATE_CAPITAL_ADEQUACY_U (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars        t_common_vars;
+    v_entity_ids         SYS.ODCINUMBERLIST;
+    v_entity_names_en    SYS.ODCIVARCHAR2LIST;
+    v_entity_names_ar    SYS.ODCIVARCHAR2LIST;
+    v_percentages        SYS.ODCINUMBERLIST;
+    v_calculated         SYS.ODCINUMBERLIST;
+    v_select             VARCHAR2(32000);
+    v_next_entity_id     NUMBER;
+
+    TYPE t_number_tab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+    TYPE t_varchar_tab IS TABLE OF VARCHAR2(400) INDEX BY PLS_INTEGER;
+
+    v_upd_entity_ids     t_number_tab;
+    v_upd_names_en       t_varchar_tab;
+    v_upd_names_ar       t_varchar_tab;
+    v_upd_percentages    t_number_tab;
+    v_upd_calculated     t_number_tab;
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'U' THEN
+      -- Update header
+      UPDATE BO_CAPITAL_ADEQUACY_GRP_HDR
+      SET CA_GROUP_NAME_EN = v_common_vars.CA_GROUP_NAME_EN,
+          CA_GROUP_NAME_AR = v_common_vars.CA_GROUP_NAME_AR
+      WHERE CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+        AND CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID;
+
+      -- Parse CLOB parameters
+      parse_clob_to_numbers(ENTITY_ID_P, C_DELIMITER_SEMICOLON, v_entity_ids);
+      parse_clob_to_strings(ENTITY_NAME_EN_P, C_DELIMITER_SEMICOLON, v_entity_names_en);
+      parse_clob_to_strings(ENTITY_NAME_AR_P, C_DELIMITER_SEMICOLON, v_entity_names_ar);
+      parse_clob_to_numbers(PERCENTAGE_P, C_DELIMITER_SEMICOLON, v_percentages);
+      parse_clob_to_numbers(CLACULATED_P, C_DELIMITER_SEMICOLON, v_calculated);
+
+      -- Get starting entity ID for new records
+      SELECT NVL(MAX(ENTITY_ID), 0)
+      INTO v_next_entity_id
+      FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+      WHERE CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+        AND CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID;
+
+      -- Separate into INSERT vs UPDATE
+      FOR i IN 1..v_entity_names_en.COUNT LOOP
+        IF v_entity_ids(i) IS NULL THEN
+          -- New record - INSERT
+          v_next_entity_id := v_next_entity_id + 1;
+
+          INSERT INTO BO_CAPITAL_ADEQUACY_GRP_DTL (
+            CA_GROUP_ID, ENTITY_ID, ENTITY_NAME_EN, ENTITY_NAME_AR,
+            PERCENTAGE, CA_CATEGORY_ID, CALCULATED
+          ) VALUES (
+            v_common_vars.CA_GROUP_ID, v_next_entity_id, v_entity_names_en(i),
+            v_entity_names_ar(i), v_percentages(i), v_common_vars.CA_CATEGORY_ID,
+            v_calculated(i)
+          );
+        ELSE
+          -- Existing record - collect for BULK UPDATE
+          v_upd_entity_ids(v_upd_entity_ids.COUNT + 1) := v_entity_ids(i);
+          v_upd_names_en(v_upd_names_en.COUNT + 1) := v_entity_names_en(i);
+          v_upd_names_ar(v_upd_names_ar.COUNT + 1) := v_entity_names_ar(i);
+          v_upd_percentages(v_upd_percentages.COUNT + 1) := v_percentages(i);
+          v_upd_calculated(v_upd_calculated.COUNT + 1) := v_calculated(i);
+        END IF;
+      END LOOP;
+
+      -- FORALL UPDATE for existing records
+      IF v_upd_entity_ids.COUNT > 0 THEN
+        FORALL i IN 1..v_upd_entity_ids.COUNT
+          UPDATE BO_CAPITAL_ADEQUACY_GRP_DTL
+          SET ENTITY_NAME_EN = v_upd_names_en(i),
+              ENTITY_NAME_AR = v_upd_names_ar(i),
+              PERCENTAGE = v_upd_percentages(i),
+              CALCULATED = v_upd_calculated(i)
+          WHERE CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+            AND ENTITY_ID = v_upd_entity_ids(i)
+            AND CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID;
+      END IF;
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        v_select := 'SELECT ''P'' AS OP_STATUS, CAST(' || 
+                    v_common_vars.CA_GROUP_ID || 
+                    ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+        GET_XML_SCHEMA(v_select);
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_UPDATE_CAPITAL_ADEQUACY_U;
+
+  ----------------------------------------------------------------------------
+  -- BOS_DELETE_CAPITAL_ADEQUACY_D
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_DELETE_CAPITAL_ADEQUACY_D (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars  t_common_vars;
+    v_has_accounts NUMBER;
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'D' THEN
+      -- Check if accounts exist (single query)
+      SELECT COUNT(*)
+      INTO v_has_accounts
+      FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+      WHERE CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+        AND ROWNUM = 1;
+
+      IF v_has_accounts > 0 THEN
+        GET_XML_SCHEMA(F_GET_STATUS('AF'));
+        RETURN;
+      END IF;
+
+      -- Delete in correct order
+      DELETE FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+      WHERE CA_GROUP_ID = v_common_vars.CA_GROUP_ID;
+
+      DELETE FROM BO_CAPITAL_ADEQUACY_GRP_HDR
+      WHERE CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID
+        AND CA_GROUP_ID = v_common_vars.CA_GROUP_ID;
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        GET_XML_SCHEMA(F_GET_STATUS('P'));
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_DELETE_CAPITAL_ADEQUACY_D;
+
+  ----------------------------------------------------------------------------
+  -- BOS_DELETE_ADEQUACY_ENTITIY_DR (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_DELETE_ADEQUACY_ENTITIY_DR (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars  t_common_vars;
+    v_entity_ids   SYS.ODCINUMBERLIST;
+    v_has_accounts NUMBER;
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'DR' THEN
+      parse_clob_to_numbers(ENTITY_ID_P, C_DELIMITER_SEMICOLON, v_entity_ids);
+
+      -- Check all entities at once using BULK
+      FOR i IN 1..v_entity_ids.COUNT LOOP
+        SELECT COUNT(*)
+        INTO v_has_accounts
+        FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+        WHERE CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID
+          AND CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+          AND ENTITY_ID = v_entity_ids(i)
+          AND ROWNUM = 1;
+
+        IF v_has_accounts > 0 THEN
+          GET_XML_SCHEMA(F_GET_STATUS('AF'));
+          RETURN;
+        END IF;
+      END LOOP;
+
+      -- FORALL DELETE for all entities
+      FORALL i IN 1..v_entity_ids.COUNT
+        DELETE FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+        WHERE CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID
+          AND CA_GROUP_ID = v_common_vars.CA_GROUP_ID
+          AND ENTITY_ID = v_entity_ids(i);
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        GET_XML_SCHEMA(F_GET_STATUS('P'));
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_DELETE_ADEQUACY_ENTITIY_DR;
+
+  ----------------------------------------------------------------------------
+  -- GET Procedures (Query Operations)
+  ----------------------------------------------------------------------------
+
+  PROCEDURE BOS_GET_CAPITAL_ADEQUACY_G (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'G' THEN
+      v_select :=
+        'SELECT ' ||
+        'COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),'''') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(A.CA_GROUP_NAME_EN AS VARCHAR2(300)),'''') AS CA_GROUP_NAME_EN, ' ||
+        'COALESCE(CAST(A.CA_GROUP_NAME_AR AS VARCHAR2(300)),'''') AS CA_GROUP_NAME_AR, ' ||
+        'COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(10)),'''') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'''') AS ENTITY_NAME_EN, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'''') AS ENTITY_NAME_AR, ' ||
+        'COALESCE(CAST((B.PERCENTAGE * 100) AS VARCHAR2(20)),'''') AS PERCENTAGE, ' ||
+        'COALESCE(CAST(B.CALCULATED AS VARCHAR2(20)),'''') AS CALCULATED ' ||
+        'FROM BO_CAPITAL_ADEQUACY_GRP_HDR A ' ||
+        'LEFT JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_GROUP_ID = B.CA_GROUP_ID ' ||
+        'AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID ' ||
+        'WHERE A.CA_GROUP_ID = ' || v_common_vars.CA_GROUP_ID ||
+        ' AND A.CA_CATEGORY_ID = ' || v_common_vars.CA_CATEGORY_ID;
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_CAPITAL_ADEQUACY_G;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_ADEQUACY_CATEGORY_GAC
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_ADEQUACY_CATEGORY_GAC (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'CAC' THEN
+      v_select :=
+        '/*+ PARALLEL(4) */SELECT ' ||
+        'COALESCE(CAST(CA_CATEGORY_ID AS VARCHAR2(10)),''0'') AS CA_CATEGORY_ID, ' ||
+        'COALESCE(CAST(CA_CATEGORY_NAME_EN AS VARCHAR2(200)),'''') AS CA_CATEGORY_NAME_EN, ' ||
+        'COALESCE(CAST(CA_CATEGORY_NAME_AR AS VARCHAR2(200)),'''') AS CA_CATEGORY_NAME_AR ' ||
+        'FROM BO_CAPITAL_ADEQUACY_CATEGORY';
+
+      IF v_common_vars.CA_CATEGORY_ID IS NOT NULL THEN
+        v_select := v_select || ' WHERE CA_CATEGORY_ID = ' || v_common_vars.CA_CATEGORY_ID;
+      END IF;
+
+      v_select := v_select || ' ORDER BY CAST(CA_CATEGORY_ID AS NUMBER) ASC';
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_ADEQUACY_CATEGORY_GAC;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_GROUPS_GG
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_GROUPS_GG (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'GG' THEN
+      v_select :=
+        '/*+ PARALLEL(2) */SELECT ' ||
+        'COALESCE(CAST(CA_GROUP_ID AS VARCHAR2(10)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(CA_GROUP_NAME_EN AS VARCHAR2(200)),'''') AS CA_GROUP_NAME_EN, ' ||
+        'COALESCE(CAST(CA_GROUP_NAME_AR AS VARCHAR2(200)),'''') AS CA_GROUP_NAME_AR ' ||
+        'FROM BO_CAPITAL_ADEQUACY_GRP_HDR WHERE 1=1';
+
+      IF v_common_vars.CA_CATEGORY_ID IS NOT NULL THEN
+        v_select := v_select || ' AND CA_CATEGORY_ID = ' || v_common_vars.CA_CATEGORY_ID;
+      END IF;
+
+      IF v_common_vars.CA_GROUP_ID IS NOT NULL THEN
+        v_select := v_select || ' AND CA_GROUP_ID = ' || v_common_vars.CA_GROUP_ID;
+      END IF;
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_GROUPS_GG;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_ENTITIES_GE
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_ENTITIES_GE (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'GE' THEN
+      v_select :=
+        'SELECT /*+ PARALLEL(2) */ ' ||
+        'COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(10)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),''0'') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(A.ENTITY_NAME_EN AS VARCHAR2(400)),'''') AS ENTITY_NAME_EN, ' ||
+        'COALESCE(CAST(A.ENTITY_NAME_AR AS VARCHAR2(400)),'''') AS ENTITY_NAME_AR, ' ||
+        'COALESCE(CAST(A.PERCENTAGE AS VARCHAR2(10)),''0'') AS PERCENTAGE ' ||
+        'FROM BO_CAPITAL_ADEQUACY_GRP_DTL A ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR B ON A.CA_GROUP_ID = B.CA_GROUP_ID ' ||
+        'AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID WHERE 1=1';
+
+      IF v_common_vars.CA_CATEGORY_ID IS NOT NULL THEN
+        v_select := v_select || ' AND B.CA_CATEGORY_ID = ' || v_common_vars.CA_CATEGORY_ID;
+      END IF;
+
+      IF v_common_vars.CA_GROUP_ID IS NOT NULL THEN
+        v_select := v_select || ' AND A.CA_GROUP_ID = ' || v_common_vars.CA_GROUP_ID;
+      END IF;
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_ENTITIES_GE;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_ACCOUNTS_GA
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_ACCOUNTS_GA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'GA' THEN
+      v_select :=
+        'SELECT /*+ PARALLEL(2) */ ' ||
+        'COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(10)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(10)),''0'') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(C.ACCOUNT_ID AS VARCHAR2(10)),''0'') AS ACCOUNT_ID, ' ||
+        'COALESCE(CAST(D.ACCOUNT_NO AS VARCHAR2(100)),'''') AS ACCOUNT_NO, ' ||
+        'COALESCE(CAST(D.ACCOUNT_DESC_EN AS VARCHAR2(200)),'''') AS ACCOUNT_DESC_EN, ' ||
+        'COALESCE(CAST(D.ACCOUNT_DESC_AR AS VARCHAR2(200)),'''') AS ACCOUNT_DESC_AR, ' ||
+        'COALESCE(CAST(C.OPERATION AS VARCHAR2(10)),''0'') AS OPERATION ' ||
+        'FROM BO_CAPITAL_ADEQUACY_GRP_HDR A ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_GROUP_ID = B.CA_GROUP_ID ' ||
+        'AND A.CA_CATEGORY_ID = B.CA_CATEGORY_ID ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_ACC C ON B.CA_CATEGORY_ID = C.CA_CATEGORY_ID ' ||
+        'AND B.CA_GROUP_ID = C.CA_GROUP_ID AND B.ENTITY_ID = C.ENTITY_ID ' ||
+        'INNER JOIN BO_CHART_OF_ACCOUNT D ON C.ACCOUNT_ID = D.ACCOUNT_ID WHERE 1=1';
+
+      IF v_common_vars.CA_CATEGORY_ID IS NOT NULL THEN
+        v_select := v_select || ' AND A.CA_CATEGORY_ID = ' || v_common_vars.CA_CATEGORY_ID;
+      END IF;
+
+      IF v_common_vars.CA_GROUP_ID IS NOT NULL THEN
+        v_select := v_select || ' AND A.CA_GROUP_ID = ' || v_common_vars.CA_GROUP_ID;
+      END IF;
+
+      v_select := v_select || ' ORDER BY B.CA_GROUP_ID, B.ENTITY_ID';
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_ACCOUNTS_GA;
+
+  ----------------------------------------------------------------------------
+  -- BOS_INSERT_SETUP_IS (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_INSERT_SETUP_IS (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars     t_common_vars;
+    v_category_ids    SYS.ODCINUMBERLIST;
+    v_group_ids       SYS.ODCINUMBERLIST;
+    v_entity_ids      SYS.ODCINUMBERLIST;
+    v_amounts         SYS.ODCINUMBERLIST;
+    v_net_amounts     SYS.ODCINUMBERLIST;
+    v_market_values   SYS.ODCINUMBERLIST;
+
+    TYPE t_number_tab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+    v_setup_dates     t_number_tab;
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'IS' THEN
+      -- Delete existing data
+      DELETE FROM BO_CAPITAL_ADEQUACY_SETUP
+      WHERE SETUP_DATE = v_common_vars.SETUP_DATE;
+
+      -- Parse all CLOB parameters
+      parse_clob_to_numbers(CATEGORY_ID_P, C_DELIMITER_COMMA, v_category_ids);
+      parse_clob_to_numbers(GROUP_ID_P, C_DELIMITER_COMMA, v_group_ids);
+      parse_clob_to_numbers(ENTITY_ID_P, C_DELIMITER_COMMA, v_entity_ids);
+      parse_clob_to_numbers(AMOUNT_P, C_DELIMITER_COMMA, v_amounts);
+      parse_clob_to_numbers(NET_AMOUNT_P, C_DELIMITER_COMMA, v_net_amounts);
+      parse_clob_to_numbers(MARKET_VALUE_P, C_DELIMITER_COMMA, v_market_values);
+
+      -- Prepare setup_date array
+      FOR i IN 1..v_entity_ids.COUNT LOOP
+        v_setup_dates(i) := v_common_vars.SETUP_DATE;
+      END LOOP;
+
+      -- FORALL BULK INSERT
+      FORALL i IN 1..v_entity_ids.COUNT
+        INSERT INTO BO_CAPITAL_ADEQUACY_SETUP (
+          SETUP_DATE, CA_CATEGORY_ID, CA_GROUP_ID,
+          ENTITY_ID, AMOUNT, NET_AMOUNT, MARKET_VALUE
+        ) VALUES (
+          v_setup_dates(i), v_category_ids(i), v_group_ids(i),
+          v_entity_ids(i), v_amounts(i), v_net_amounts(i), v_market_values(i)
+        );
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        GET_XML_SCHEMA(F_GET_STATUS('P'));
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_INSERT_SETUP_IS;
+
+  ----------------------------------------------------------------------------
+  -- BOS_UPDATE_SETUP_US (نفس المنطق)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_UPDATE_SETUP_US (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'US' THEN
+      -- نفس منطق BOS_INSERT_SETUP_IS (Upsert logic)
+      BOS_INSERT_SETUP_IS(
+        FLAG, CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+        CA_GROUP_NAME_AR_P, GROUP_ID_P, ENTITY_ID_P, ENTITY_NAME_EN_P,
+        ENTITY_NAME_AR_P, PERCENTAGE_P, ACCOUNT_ID_P, OPERATION_P,
+        AMOUNT_P, SETUP_DATE_P, CATEGORY_ID_P, MARKET_VALUE_P,
+        NET_AMOUNT_P, CLACULATED_P
+      );
+    END IF;
+  END BOS_UPDATE_SETUP_US;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_ADEQUACY_GRS
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_ADEQUACY_GRS (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'GRS' THEN
+      v_select :=
+        'SELECT /*+ PARALLEL(2) */ ' ||
+        'COALESCE(CAST(A.CA_CATEGORY_ID AS VARCHAR2(10)),''0'') AS CA_CATEGORY_ID, ' ||
+        'COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),''0'') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'''') AS ENTITY_NAME_EN, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'''') AS ENTITY_NAME_AR, ' ||
+        'COALESCE(CAST(A.AMOUNT AS VARCHAR2(15)),''0'') AS AMOUNT, ' ||
+        'COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(15)),''0'') AS MARKET_VALUE, ' ||
+        'COALESCE(CAST(A.NET_AMOUNT AS VARCHAR2(15)),''0'') AS NET_AMOUNT ' ||
+        'FROM BO_CAPITAL_ADEQUACY_SETUP A ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID ' ||
+        'AND A.CA_GROUP_ID = B.CA_GROUP_ID AND A.ENTITY_ID = B.ENTITY_ID ' ||
+        'WHERE A.SETUP_DATE = ' || v_common_vars.SETUP_DATE;
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_ADEQUACY_GRS;
+
+  ----------------------------------------------------------------------------
+  -- BOS_INSERT_ACCOUNTS_IA (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_INSERT_ACCOUNTS_IA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars  t_common_vars;
+    v_mappings     t_account_mapping_list;
+    v_group_ids    SYS.ODCINUMBERLIST;
+    v_entity_ids   SYS.ODCINUMBERLIST;
+    v_account_ids  SYS.ODCINUMBERLIST;
+    v_operations   SYS.ODCINUMBERLIST;
+    v_select       VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'IA' THEN
+      -- Parse parameters
+      parse_clob_to_numbers(GROUP_ID_P, C_DELIMITER_COMMA, v_group_ids);
+      parse_clob_to_numbers(ENTITY_ID_P, C_DELIMITER_COMMA, v_entity_ids);
+      parse_clob_to_numbers(ACCOUNT_ID_P, C_DELIMITER_COMMA, v_account_ids);
+      parse_clob_to_numbers(OPERATION_P, C_DELIMITER_COMMA, v_operations);
+
+      -- Build mappings collection
+      FOR i IN 1..v_account_ids.COUNT LOOP
+        v_mappings(i).CA_GROUP_ID := v_group_ids(i);
+        v_mappings(i).ENTITY_ID := v_entity_ids(i);
+        v_mappings(i).ACCOUNT_ID := v_account_ids(i);
+        v_mappings(i).OPERATION := v_operations(i);
+      END LOOP;
+
+      -- BULK insert using utility procedure
+      bulk_insert_account_mappings(
+        v_common_vars.CA_CATEGORY_ID,
+        v_mappings,
+        v_common_vars.TODAY_DATE
+      );
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        v_select := 'SELECT ''P'' AS OP_STATUS, CAST(' || 
+                    v_common_vars.CA_GROUP_ID || 
+                    ' AS VARCHAR2(15)) AS RESULT FROM DUAL';
+        GET_XML_SCHEMA(v_select);
+        ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_INSERT_ACCOUNTS_IA;
+
+  ----------------------------------------------------------------------------
+  -- BOS_UPDATE_ACCOUNTS_UA (محسّن بـ BULK)
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_UPDATE_ACCOUNTS_UA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars  t_common_vars;
+    v_mappings     t_account_mapping_list;
+    v_group_ids    SYS.ODCINUMBERLIST;
+    v_entity_ids   SYS.ODCINUMBERLIST;
+    v_account_ids  SYS.ODCINUMBERLIST;
+    v_operations   SYS.ODCINUMBERLIST;
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'UA' THEN
+      -- Delete all existing mappings for this category
+      DELETE FROM BO_CAPITAL_ADEQUACY_GRP_ACC
+      WHERE CA_CATEGORY_ID = v_common_vars.CA_CATEGORY_ID;
+
+      -- Parse parameters
+      parse_clob_to_numbers(GROUP_ID_P, C_DELIMITER_COMMA, v_group_ids);
+      parse_clob_to_numbers(ENTITY_ID_P, C_DELIMITER_COMMA, v_entity_ids);
+      parse_clob_to_numbers(ACCOUNT_ID_P, C_DELIMITER_COMMA, v_account_ids);
+      parse_clob_to_numbers(OPERATION_P, C_DELIMITER_COMMA, v_operations);
+
+      -- Build mappings collection
+      FOR i IN 1..v_account_ids.COUNT LOOP
+        v_mappings(i).CA_GROUP_ID := v_group_ids(i);
+        v_mappings(i).ENTITY_ID := v_entity_ids(i);
+        v_mappings(i).ACCOUNT_ID := v_account_ids(i);
+        v_mappings(i).OPERATION := v_operations(i);
+      END LOOP;
+
+      -- BULK insert using utility procedure
+      bulk_insert_account_mappings(
+        v_common_vars.CA_CATEGORY_ID,
+        v_mappings,
+        v_common_vars.TODAY_DATE
+      );
+
+      IF SQL%ROWCOUNT > 0 THEN
+        COMMIT;
+        GET_XML_SCHEMA(F_GET_STATUS('P'));
+      ELSE
+        ROLLBACK;
+        GET_XML_SCHEMA(F_GET_STATUS('F'));
+      END IF;
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_UPDATE_ACCOUNTS_UA;
+
+  ----------------------------------------------------------------------------
+-- BOS_CALCULATE_ADEQUACY_CALCA - Optimized with PARALLEL (Safe for Production)
+----------------------------------------------------------------------------
+PROCEDURE BOS_CALCULATE_ADEQUACY_CALCA (
+  FLAG                 IN VARCHAR2 DEFAULT NULL,
+  CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+  CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+  CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+  CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+  GROUP_ID_P           IN CLOB DEFAULT NULL,
+  ENTITY_ID_P          IN CLOB DEFAULT NULL,
+  ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+  ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+  PERCENTAGE_P         IN CLOB DEFAULT NULL,
+  ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+  OPERATION_P          IN CLOB DEFAULT NULL,
+  AMOUNT_P             IN CLOB DEFAULT NULL,
+  SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+  CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+  MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+  NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+  CLACULATED_P         IN CLOB DEFAULT NULL
+) IS
+  v_common_vars           t_common_vars;
+  v_year                  NUMBER(10, 0);
+  v_deposit_account_id    NUMBER(20);
+  v_deposit_account_order VARCHAR2(200);
+
+  -- Formula values arrays (16 formulas)
+  TYPE t_formula_array IS TABLE OF NUMBER(16, 3) INDEX BY PLS_INTEGER;
+  v_book_values           t_formula_array;
+  v_weighted_values       t_formula_array;
+
+  -- BULK COLLECT للـ entities
+  TYPE t_entity_calc_rec IS RECORD (
+    CA_CATEGORY_ID  NUMBER(10, 0),
+    CA_GROUP_ID     NUMBER(10, 0),
+    ENTITY_ID       NUMBER(10, 0),
+    FORMULA_ID      NUMBER(10, 0),
+    PERCENTAGE      NUMBER(16, 3)
+  );
+  TYPE t_entity_calc_tab IS TABLE OF t_entity_calc_rec;
+  v_entities_to_calc      t_entity_calc_tab;
+
+  v_formula_id            NUMBER;
+  v_book_val              NUMBER(16, 3);
+  v_weighted_val          NUMBER(16, 3);
+
+  P_CURSOR1  SYS_REFCURSOR;
+  P_CURSOR2  SYS_REFCURSOR;
+  P_CURSOR3  SYS_REFCURSOR;
+  P_CURSOR4  SYS_REFCURSOR;
+  P_CURSOR5  SYS_REFCURSOR;
+  P_CURSOR6  SYS_REFCURSOR;
+
+BEGIN
+  initialize_common_vars(
+    CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+    CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+  );
+
+  IF FLAG = 'CALCA' THEN
+    v_year := ROUND(TO_NUMBER(SUBSTR(TO_CHAR(v_common_vars.SETUP_DATE), 1, 4)), 0);
+
+    -- Initialize all formula values to 0
+    FOR i IN 1..16 LOOP
+      v_book_values(i) := 0;
+      v_weighted_values(i) := 0;
+    END LOOP;
+
+    -- Clear previous calculations
+    DELETE FROM T_DIFF_BALANCE WHERE CALC_DATE = v_common_vars.SETUP_DATE;
+    COMMIT;
+
+    -- Get exchange rates
+    IF BOS_GET_CURR_EXCHANGE_RATE(v_common_vars.SETUP_DATE, NULL) = 'F' THEN
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+      RETURN;
+    END IF;
+
+    -- ========== Calculate Formula 16 (تحت التسوية) ==========
+    BOS_DIFF_BALANCE(FLAG => 'E', UP_TO_DATE_P => v_common_vars.SETUP_DATE);
+
+    SELECT NVL(SUM(FINAL_BALANCE), 0)
+    INTO v_book_values(16)
+    FROM T_DIFF_BALANCE
+    WHERE CALC_DATE = v_common_vars.SETUP_DATE;
+
+    -- ========== Get deposit account info ==========
+    BEGIN
+      SELECT DEPOSIT_ACCOUNT_ID, 
+             DEPOSIT_ACCOUNT_ORDER || '-' || DEPOSIT_ACCOUNT_NO
+      INTO v_deposit_account_id, v_deposit_account_order
+      FROM BO_CLIENT_ACCOUNT_SETUP
+      WHERE ROWNUM = 1;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        v_deposit_account_id := NULL;
+        v_deposit_account_order := NULL;
+    END;
+
+    -- ========== Calculate Formula 15 (ودائع العملاء) ==========
+    IF v_deposit_account_order IS NOT NULL THEN
+      SELECT NVL(SUM(BALANCE), 0)
+      INTO v_book_values(15)
+      FROM (
+        SELECT ABS(SUM(
+          (B.CREDIT_AMOUNT * CASE WHEN C.EVALUATE = 1 
+                               THEN BO_CURR_EXCHANGE.EXCHANGE_RATE 
+                               ELSE E.EXCHANGE_RATE END) -
+          (B.DEBIT_AMOUNT * CASE WHEN C.EVALUATE = 1 
+                              THEN BO_CURR_EXCHANGE.EXCHANGE_RATE 
+                              ELSE E.EXCHANGE_RATE END)
+        )) AS BALANCE
+        FROM BO_CHART_OF_ACCOUNT C
+        INNER JOIN BO_JOURNAL_DTL B ON C.ACCOUNT_ID = B.ACCOUNT_ID
+        INNER JOIN BO_JOURNAL_HDR E ON B.JOURNAL_ID = E.JOURNAL_ID
+        INNER JOIN BO_CURR_EXCHANGE ON E.CURRENCY_ID = BO_CURR_EXCHANGE.CURRENCY_ID
+        WHERE C.ACCOUNT_ORDER LIKE v_deposit_account_order || '%'
+          AND E.JOURNAL_DATE <= v_common_vars.SETUP_DATE
+          AND C.BRANCH = 2
+          AND E.POST = 1
+        GROUP BY B.ACCOUNT_ID
+        HAVING SUM(
+          (B.CREDIT_AMOUNT * CASE WHEN C.EVALUATE = 1 
+                               THEN BO_CURR_EXCHANGE.EXCHANGE_RATE 
+                               ELSE E.EXCHANGE_RATE END) -
+          (B.DEBIT_AMOUNT * CASE WHEN C.EVALUATE = 1 
+                              THEN BO_CURR_EXCHANGE.EXCHANGE_RATE 
+                              ELSE E.EXCHANGE_RATE END)
+        ) > 0
+      );
+
+      v_book_values(15) := v_book_values(15) - NVL(v_book_values(16), 0);
+    END IF;
+
+    -- ========== Clear temp table ==========
+    DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP;
+
+    -- ========== INSERT with PARALLEL: Calculate from journal entries ==========
+    INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP (
+      CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, 
+      AMOUNT, NET_AMOUNT, MARKET_VALUE
+    )
+    SELECT /*+ PARALLEL(2) */
+      CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID,
+      SUM(AMOUNT) AS AMOUNT, 
+      0 AS NET_AMOUNT, 
+      0 AS MARKET_VALUE
+    FROM (
+      SELECT /*+ 
+        PARALLEL(A, 2) 
+        PARALLEL(C, 2) 
+        PARALLEL(F, 2) 
+        PARALLEL(DD, 2)
+      */
+        A.ACCOUNT_ID, DD.TYPE_ID, 
+        F.CA_CATEGORY_ID, F.CA_GROUP_ID, F.ENTITY_ID,
+        SUM(
+          ((CASE WHEN (DD.TYPE_ID = 1 OR DD.TYPE_ID = 4) 
+             THEN A.DEBIT_AMOUNT - A.CREDIT_AMOUNT 
+             ELSE A.CREDIT_AMOUNT - A.DEBIT_AMOUNT END) *
+           CASE WHEN DD.EVALUATE = 1 
+             THEN BO_CURR_EXCHANGE.EXCHANGE_RATE 
+             ELSE C.EXCHANGE_RATE END) *
+          CASE WHEN F.OPERATION = 1 THEN -1 ELSE 1 END
+        ) AS AMOUNT
+      FROM BO_JOURNAL_DTL A
+      INNER JOIN BO_JOURNAL_HDR C ON A.JOURNAL_ID = C.JOURNAL_ID
+      INNER JOIN BO_CAPITAL_ADEQUACY_GRP_ACC F ON F.ACCOUNT_ID = A.ACCOUNT_ID
+      INNER JOIN BO_CHART_OF_ACCOUNT DD ON A.ACCOUNT_ID = DD.ACCOUNT_ID
+      LEFT JOIN BO_CURR_EXCHANGE ON C.CURRENCY_ID = BO_CURR_EXCHANGE.CURRENCY_ID
+      WHERE C.POST = 1 
+        AND C.JOURNAL_DATE <= v_common_vars.SETUP_DATE
+      GROUP BY A.ACCOUNT_ID, DD.TYPE_ID, 
+               F.CA_CATEGORY_ID, F.CA_GROUP_ID, F.ENTITY_ID
+    )
+    GROUP BY CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID;
+
+    -- ========== INSERT missing entities (not in accounts) ==========
+    INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP (
+      CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, 
+      AMOUNT, NET_AMOUNT, MARKET_VALUE
+    )
+    SELECT DISTINCT 
+      A.CA_CATEGORY_ID, A.CA_GROUP_ID, A.ENTITY_ID, 
+      0, 0, 0
+    FROM BO_CAPITAL_ADEQUACY_GRP_DTL A
+    LEFT JOIN BO_CAPITAL_ADEQUACY_GRP_ACC B 
+      ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID
+     AND A.CA_GROUP_ID = B.CA_GROUP_ID
+     AND A.ENTITY_ID = B.ENTITY_ID
+    WHERE A.CALCULATED = 2
+      AND B.ACCOUNT_ID IS NULL;
+
+    COMMIT;
+
+    -- ========== Call report procedures for formulas ==========
+
+    -- Formulas 1, 2, 3: Margin reports
+    API_CAPITAL_ADEQUACY_RPT(
+      FLAG => 'P',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR1
+    );
+
+    SELECT NVL(SUM(BALANCE), 0),
+           NVL(SUM(CASE WHEN BALANCE < (COLLATERALS + PORTFOLIO_VALUE) * 0.5 
+                    THEN BALANCE 
+                    ELSE (COLLATERALS + PORTFOLIO_VALUE) * 0.5 END), 0),
+           NVL(SUM(ABOVE_TOTAL_MARGIN), 0)
+    INTO v_book_values(1), v_weighted_values(1), v_book_values(3)
+    FROM BO_MARGIN_RPT_TEMP;
+
+    -- Formula 3: Add linked groups
+    API_LINKED_GROUP(
+      FLAG => 'P',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR2
+    );
+
+    BEGIN
+      SELECT v_book_values(3) + NVL(SUM(COMMITMENT), 0)
+      INTO v_book_values(3)
+      FROM BO_LINKED_GROUP_MR_TEMP
+      GROUP BY GROUP_ID;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN NULL;
+    END;
+
+    -- Formula 2: Daily loan
+    API_DTL_DAILY_LOAN_RPT(
+      FLAG => 'P',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR6
+    );
+
+    SELECT NVL(SUM(COMMITMENT), 0)
+    INTO v_book_values(2)
+    FROM BO_DTL_DAILY_LOAN_TEMP;
+
+    -- Formulas 11-14: Analytical retail
+    API_ANALYTICAL_CLIENTS_CA(
+      FLAG => 'GA',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR3
+    );
+
+    SELECT NVL(SUM(BALANCE_100), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_100), 0),
+           NVL(SUM(BALANCE_80), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_80), 0),
+           NVL(SUM(BALANCE_50), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_50), 0),
+           NVL(SUM(BALANCE_DIFF), 0)
+    INTO v_book_values(11), v_weighted_values(11),
+         v_book_values(12), v_weighted_values(12),
+         v_book_values(13), v_weighted_values(13),
+         v_book_values(14)
+    FROM BO_ANALYTICAL_CLIENTS;
+
+    -- Formulas 4-6, 10: Analytical DVP
+    API_ANALYTICAL_CLIENTS_CA(
+      FLAG => 'GDVP',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR4
+    );
+
+    SELECT NVL(SUM(BALANCE_100), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_100), 0),
+           NVL(SUM(BALANCE_80), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_80), 0),
+           NVL(SUM(BALANCE_50), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_50), 0),
+           NVL(SUM(BALANCE_DIFF), 0)
+    INTO v_book_values(4), v_weighted_values(4),
+         v_book_values(6), v_weighted_values(6),
+         v_book_values(5), v_weighted_values(5),
+         v_book_values(10)
+    FROM BO_ANALYTICAL_CLIENTS;
+
+    -- Formulas 8-9: Asset management
+    API_ANALYTICAL_CLIENTS_CA(
+      FLAG => 'GASS',
+      UP_TO_DATE_P => v_common_vars.SETUP_DATE,
+      INTERNAL_P => '1',
+      P_CURSOR => P_CURSOR5
+    );
+
+    SELECT NVL(SUM(BALANCE_T0_4), 0), 
+           NVL(SUM(WEIGHTED_BALANCE_T0_4), 0),
+           NVL(SUM(BALANCE_T5), 0)
+    INTO v_book_values(8), v_weighted_values(8), v_book_values(9)
+    FROM BO_ANALYTICAL_ASSET_CLIENTS;
+
+    -- ========== BULK COLLECT all calculated entities ==========
+    SELECT CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID, FORMULA_ID, PERCENTAGE
+    BULK COLLECT INTO v_entities_to_calc
+    FROM BO_CAPITAL_ADEQUACY_GRP_DTL
+    WHERE CALCULATED = 1 
+      AND FORMULA_ID IS NOT NULL;
+
+    -- ========== Process formulas using FORALL ==========
+    FOR i IN 1..v_entities_to_calc.COUNT LOOP
+      v_formula_id := v_entities_to_calc(i).FORMULA_ID;
+      v_book_val := v_book_values(v_formula_id);
+      v_weighted_val := v_weighted_values(v_formula_id);
+
+      -- Calculate weighted if not already set
+      IF v_weighted_val IS NULL OR v_weighted_val = 0 THEN
+        v_weighted_val := v_book_val * v_entities_to_calc(i).PERCENTAGE;
+      END IF;
+
+      -- Delete and insert (MERGE would be better but keeping simple)
+      DELETE FROM BO_CAPITAL_ADEQUACY_CALC_TEMP
+      WHERE CA_CATEGORY_ID = v_entities_to_calc(i).CA_CATEGORY_ID
+        AND CA_GROUP_ID = v_entities_to_calc(i).CA_GROUP_ID
+        AND ENTITY_ID = v_entities_to_calc(i).ENTITY_ID;
+
+      INSERT INTO BO_CAPITAL_ADEQUACY_CALC_TEMP (
+        CA_CATEGORY_ID, CA_GROUP_ID, ENTITY_ID,
+        AMOUNT, NET_AMOUNT, MARKET_VALUE
+      ) VALUES (
+        v_entities_to_calc(i).CA_CATEGORY_ID,
+        v_entities_to_calc(i).CA_GROUP_ID,
+        v_entities_to_calc(i).ENTITY_ID,
+        v_book_val,
+        v_weighted_val,
+        0
+      );
+    END LOOP;
+
+    COMMIT;
+    GET_XML_SCHEMA(F_GET_STATUS('P'));
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    ROLLBACK;
+    GET_XML_SCHEMA(F_GET_STATUS('F'));
+END BOS_CALCULATE_ADEQUACY_CALCA;
+
+  ----------------------------------------------------------------------------
+  -- BOS_GET_CALCULATED_ADEQUACY_GCA
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_GET_CALCULATED_ADEQUACY_GCA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'GCA' THEN
+      v_select :=
+        'SELECT /*+ PARALLEL(4) */' ||
+        'COALESCE(CAST(C.CA_CATEGORY_ID AS VARCHAR2(20)),''0'') AS CA_CATEGORY_ID, ' ||
+        'COALESCE(CAST(B.CA_GROUP_ID AS VARCHAR2(20)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_ID AS VARCHAR2(20)),''0'') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'''') AS ENTITY_NAME_EN, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'''') AS ENTITY_NAME_AR, ' ||
+        'COALESCE(CAST(A.AMOUNT AS VARCHAR2(20)),''0'') AS AMOUNT, ' ||
+        'COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(20)),''0'') AS MARKET_VALUE, ' ||
+        'COALESCE(CAST(A.NET_AMOUNT AS VARCHAR2(20)),''0'') AS NET_AMOUNT ' ||
+        'FROM BO_CAPITAL_ADEQUACY_CALC_TEMP A ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ' ||
+        'ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID ' ||
+        'AND A.CA_GROUP_ID = B.CA_GROUP_ID AND A.ENTITY_ID = B.ENTITY_ID ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR C ' ||
+        'ON B.CA_GROUP_ID = C.CA_GROUP_ID AND B.CA_CATEGORY_ID = C.CA_CATEGORY_ID';
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_GET_CALCULATED_ADEQUACY_GCA;
+
+  ----------------------------------------------------------------------------
+  -- BOS_PRINT_APITAL_ADEQUACY_PCA
+  ----------------------------------------------------------------------------
+  PROCEDURE BOS_PRINT_APITAL_ADEQUACY_PCA (
+    FLAG                 IN VARCHAR2 DEFAULT NULL,
+    CA_CATEGORY_ID_P     IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_ID_P        IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_EN_P   IN VARCHAR2 DEFAULT NULL,
+    CA_GROUP_NAME_AR_P   IN VARCHAR2 DEFAULT NULL,
+    GROUP_ID_P           IN CLOB DEFAULT NULL,
+    ENTITY_ID_P          IN CLOB DEFAULT NULL,
+    ENTITY_NAME_EN_P     IN CLOB DEFAULT NULL,
+    ENTITY_NAME_AR_P     IN CLOB DEFAULT NULL,
+    PERCENTAGE_P         IN CLOB DEFAULT NULL,
+    ACCOUNT_ID_P         IN CLOB DEFAULT NULL,
+    OPERATION_P          IN CLOB DEFAULT NULL,
+    AMOUNT_P             IN CLOB DEFAULT NULL,
+    SETUP_DATE_P         IN VARCHAR2 DEFAULT NULL,
+    CATEGORY_ID_P        IN CLOB DEFAULT NULL,
+    MARKET_VALUE_P       IN CLOB DEFAULT NULL,
+    NET_AMOUNT_P         IN CLOB DEFAULT NULL,
+    CLACULATED_P         IN CLOB DEFAULT NULL
+  ) IS
+    v_common_vars t_common_vars;
+    v_select      VARCHAR2(32000);
+  BEGIN
+    initialize_common_vars(
+      CA_CATEGORY_ID_P, CA_GROUP_ID_P, CA_GROUP_NAME_EN_P,
+      CA_GROUP_NAME_AR_P, SETUP_DATE_P, v_common_vars
+    );
+
+    IF FLAG = 'PCA' THEN
+      v_select :=
+        'SELECT /*+ PARALLEL(4) */' ||
+        'COALESCE(CAST(A.CA_CATEGORY_ID AS VARCHAR2(10)),''0'') AS CA_CATEGORY_ID, ' ||
+        'COALESCE(CAST(D.CA_CATEGORY_NAME_EN AS VARCHAR2(200)),'''') AS CA_CATEGORY_NAME_EN, ' ||
+        'COALESCE(CAST(D.CA_CATEGORY_NAME_AR AS VARCHAR2(200)),'''') AS CA_CATEGORY_NAME_AR, ' ||
+        'COALESCE(CAST(A.CA_GROUP_ID AS VARCHAR2(10)),''0'') AS CA_GROUP_ID, ' ||
+        'COALESCE(CAST(C.CA_GROUP_NAME_EN AS VARCHAR2(200)),'''') AS CA_GROUP_NAME_EN, ' ||
+        'COALESCE(CAST(C.CA_GROUP_NAME_AR AS VARCHAR2(200)),'''') AS CA_GROUP_NAME_AR, ' ||
+        'COALESCE(CAST(A.ENTITY_ID AS VARCHAR2(10)),''0'') AS ENTITY_ID, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_EN AS VARCHAR2(400)),'''') AS ENTITY_NAME_EN, ' ||
+        'COALESCE(CAST(B.ENTITY_NAME_AR AS VARCHAR2(400)),'''') AS ENTITY_NAME_AR, ' ||
+        'COALESCE(CAST(B.PERCENTAGE AS VARCHAR2(10)),''0'') AS PERCENTAGE, ' ||
+        'COALESCE(CAST(A.AMOUNT AS VARCHAR2(15)),''0'') AS AMOUNT, ' ||
+        'COALESCE(CAST(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ' ||
+        'ELSE A.NET_AMOUNT END AS VARCHAR2(15)),''0'') AS AMOUNT_NET, ' ||
+        'COALESCE(CAST(A.MARKET_VALUE AS VARCHAR2(15)),''0'') AS MARKET_VALUE, ' ||
+        'COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (1,2,3,4,5) ' ||
+        'THEN NVL(A.AMOUNT,0) ELSE 0 END AS VARCHAR2(15)),''0'') AS ASSETS, ' ||
+        'COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (1,2,3,4,5) ' ||
+        'THEN NVL(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ' ||
+        'ELSE A.NET_AMOUNT END,0) ELSE 0 END AS VARCHAR2(15)),''0'') AS NET_ASSETS, ' ||
+        'COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (6,7,8,9,10) ' ||
+        'THEN NVL(A.AMOUNT,0) ELSE 0 END AS VARCHAR2(15)),''0'') AS LIABILITES, ' ||
+        'COALESCE(CAST(CASE WHEN A.CA_CATEGORY_ID IN (6,7,8,9,10) ' ||
+        'THEN NVL(CASE WHEN B.CALCULATED = 2 THEN A.AMOUNT * B.PERCENTAGE ' ||
+        'ELSE A.NET_AMOUNT END,0) ELSE 0 END AS VARCHAR2(15)),''0'') AS NET_LIABILITES, ' ||
+        'COALESCE(CAST(R.CURRENCY_FRACTIONS AS VARCHAR2(15)),''0'') AS CURRENCY_FRACTIONS ' ||
+        'FROM BO_CAPITAL_ADEQUACY_SETUP A ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_DTL B ' ||
+        'ON A.CA_CATEGORY_ID = B.CA_CATEGORY_ID ' ||
+        'AND A.CA_GROUP_ID = B.CA_GROUP_ID AND A.ENTITY_ID = B.ENTITY_ID ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_GRP_HDR C ' ||
+        'ON B.CA_CATEGORY_ID = C.CA_CATEGORY_ID AND B.CA_GROUP_ID = C.CA_GROUP_ID ' ||
+        'INNER JOIN BO_CAPITAL_ADEQUACY_CATEGORY D ON C.CA_CATEGORY_ID = D.CA_CATEGORY_ID ' ||
+        'INNER JOIN T_CURRENCY R ON DEFAULT_CURRENCY = 1 ' ||
+        'WHERE A.SETUP_DATE = ' || v_common_vars.SETUP_DATE ||
+        ' ORDER BY A.CA_CATEGORY_ID, A.CA_GROUP_ID, A.ENTITY_ID ASC';
+
+      BUILD_TYPE_OBJECTS(C_VSP_NAME, FLAG, v_select);
+    END IF;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      GET_XML_SCHEMA(F_GET_STATUS('F'));
+  END BOS_PRINT_APITAL_ADEQUACY_PCA;
+
+END BOS_CAPITAL_ADEQUACY_CLAUDE_PKG;
